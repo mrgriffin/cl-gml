@@ -8,7 +8,9 @@
 
 int main()
 {
-	int stackIn[] = { 1, 2 };
+	enum { OP_INT = 0, OP_ADD = 1, OP_SUB = 2 };
+
+	int stackIn[] = { OP_INT, 1, OP_INT, 2, OP_ADD, OP_INT, 4, OP_INT, 3, OP_ADD, OP_ADD, OP_INT, 5, OP_SUB };
 
 	try {
 		// Get available platforms
@@ -55,7 +57,8 @@ int main()
 
 		// Set arguments to kernel
 		kernel.setArg(0, bufferStackIn);
-		kernel.setArg(1, bufferStackOut);
+		kernel.setArg(1, (unsigned int)(sizeof stackIn / sizeof stackIn[0]));
+		kernel.setArg(2, bufferStackOut);
 
 		// Run the kernel
 		queue.enqueueTask(kernel);
@@ -64,7 +67,7 @@ int main()
 		int stackOut;
 		queue.enqueueReadBuffer(bufferStackOut, CL_TRUE, 0, sizeof stackOut, &stackOut);
 
-		std::cout << stackIn[0] << " + " << stackIn[1] << " = " << stackOut << std::endl;
+		std::cout << " = " << stackOut << std::endl;
 	} catch(cl::Error error) {
 		std::cout << error.what() << "(" << error.err() << ")" << std::endl;
 	}

@@ -1,4 +1,16 @@
-__kernel void stack_interpret(__global const int *stack_in, unsigned int in_len, __global int *stack_out)
+int pop_int(__global const int *stack, unsigned int length, unsigned int *i)
+{
+	// TODO: Assert that i < length.
+	return stack[--(*i)];
+}
+
+void push_int(__global int *stack, unsigned int length, unsigned int *i, int value)
+{
+	// TODO: Assert that i < length.
+	stack[(*i)++] = value;
+}
+
+__kernel void stack_interpret(__global const int *in, unsigned int in_n, __global int *out, unsigned int out_n)
 {
 	const int OP_INT = 0;
 	const int OP_ADD = 1;
@@ -6,20 +18,19 @@ __kernel void stack_interpret(__global const int *stack_in, unsigned int in_len,
 
 	int ip = 0;
 	int op = 0;
-	while (ip < in_len) {
-		int type = stack_in[ip++];
+	while (ip < in_n) {
+		// TODO: Assert ip < in_n.
+		int type = in[ip++];
 		if (type == OP_INT) {
-			stack_out[op++] = stack_in[ip++];
+			push_int(out, out_n, &op, in[ip++]);
 		} else if (type == OP_ADD) {
-			int b = stack_out[op - 1];
-			int a = stack_out[op - 2];
-			stack_out[op - 2] = a + b;
-			op -= 1;
+			int b = pop_int(out, out_n, &op);
+			int a = pop_int(out, out_n, &op);
+			push_int(out, out_n, &op, a + b);
 		} else if (type == OP_SUB) {
-			int b = stack_out[op - 1];
-			int a = stack_out[op - 2];
-			stack_out[op - 2] = a - b;
-			op -= 1;
+			int b = pop_int(out, out_n, &op);
+			int a = pop_int(out, out_n, &op);
+			push_int(out, out_n, &op, a - b);
 		} else {
 			// TODO: Throw an exception.
 		}

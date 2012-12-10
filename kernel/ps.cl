@@ -5,18 +5,28 @@ struct Stack
 	__global int *max;    //!< The maximum top of this stack.
 };
 
+/*!
+ * \brief Pops an int off \p stack.
+ */
 int pop_int(struct Stack *stack)
 {
 	// TODO: Assert that top >= bottom.
 	return *--stack->top;
 }
 
+/*!
+ * \brief Pushes an int onto \p stack.
+ */
 void push_int(struct Stack *stack, int value)
 {
 	// TODO: Assert that top < max.
 	*stack->top++ = value;
 }
 
+/*!
+ * \brief Executes an int token.
+ * \detail Pushes the int onto \p stack.
+ */
 __global const int *exec_int(__global const int *token, struct Stack *stack)
 {
 	int value = *(token + 1);
@@ -26,6 +36,10 @@ __global const int *exec_int(__global const int *token, struct Stack *stack)
 	return token + 2;
 }
 
+/*!
+ * \brief Executes the addition operator.
+ * \detail Pops \c b and \c a from \p stack and pushes \c a + \c b to \p stack.
+ */
 __global const int *exec_add(struct Stack *stack)
 {
 	int b = pop_int(stack);
@@ -33,6 +47,10 @@ __global const int *exec_add(struct Stack *stack)
 	push_int(stack, a + b);
 }
 
+/*!
+ * \brief Executes the subtraction operator.
+ * \detail Pops \c b and \c a from \p stack and pushes \c a - \c b to \p stack.
+ */
 __global const int *exec_sub(struct Stack *stack)
 {
 	int b = pop_int(stack);
@@ -40,6 +58,9 @@ __global const int *exec_sub(struct Stack *stack)
 	push_int(stack, a - b);
 }
 
+/*!
+ * \brief Executes an operator token.
+ */
 __global const int *exec_op(__global const int *token, struct Stack *stack)
 {
 	enum {

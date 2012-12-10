@@ -61,7 +61,7 @@ void exec_OP(__global const struct Token *token, struct Stack *stack)
 void exec(__global const struct Token *token, struct Stack *stack)
 {
 	switch (token->type) {
-	#define TYPE(name, value) case TYPE_ ## name: exec_ ## name(token, stack); break;
+	#define TYPE(name, value) case TYPE_ ## name: exec_ ## name (token, stack); break;
 	#include "types.def"
 	// TODO: assert(false) if we reach here.
 	}

@@ -43,7 +43,7 @@ int pop_int(struct Stack *stack)
 void push_int(struct Stack *stack, int value)
 {
 	// TODO: Assert that top < max.
-	*stack->top++ = (struct Token) { TYPE_INT, value };
+	*stack->top++ = (struct Token) { TYPE_INT, { .value = value } };
 }
 
 /*!

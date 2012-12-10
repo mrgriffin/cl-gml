@@ -38,7 +38,6 @@ void exec_int(__global const struct Token *token, struct Stack *stack)
 
 #define OPERATOR(name, value, func) void exec_ ## name (struct Stack *stack) UNBOX func
 #include "operators.def"
-#undef OPERATOR
 
 /*!
  * \brief Executes an operator token.
@@ -48,7 +47,6 @@ void exec_op(__global const struct Token *token, struct Stack *stack)
 	switch (token->data.op) {
 	#define OPERATOR(name, value, func) case OP_ ## name: exec_ ## name (stack); break;
 	#include "operators.def"
-	#undef OPERATOR
 	// TODO: assert(false) if we reach here.
 	}
 }

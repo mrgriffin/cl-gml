@@ -1,3 +1,7 @@
+#ifndef OPERATOR
+#error "must define OPERATOR before including operators"
+#endif
+
 OPERATOR(ADD, 0, ({
 	int b = pop_int(stack);
 	int a = pop_int(stack);
@@ -9,3 +13,5 @@ OPERATOR(SUB, 1, ({
 	int a = pop_int(stack);
 	push_int(stack, a - b);
 }))
+
+#undef OPERATOR

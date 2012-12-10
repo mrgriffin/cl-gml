@@ -5,14 +5,12 @@ enum Type
 {
 	#define TYPE(name, value) TYPE_ ## name = value,
 	#include "types.def"
-	#undef TYPE
 };
 
 enum Operator
 {
 	#define OPERATOR(name, value, func) OP_ ## name = value,
 	#include "operators.def"
-	#undef OPERATOR
 };
 
 struct Token

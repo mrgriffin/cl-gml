@@ -1,2 +1,8 @@
+#ifndef TYPE
+#error "must define TYPE before including types"
+#endif
+
 TYPE(INT, 0)
 TYPE(OP, 1)
+
+#undef TYPE

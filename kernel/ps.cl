@@ -112,7 +112,7 @@ void exec(__global const struct Token *token, struct Stack *stack)
  * \param out a pointer to the stack.
  * \param out_n the maximum size of the stack.
  */
-__kernel void exec_range(__global const struct Token *in, unsigned int in_n, __global int *out, unsigned int out_n)
+__kernel void exec_range(__global const struct Token *in, unsigned int in_n, __global const struct Token *out, unsigned int out_n)
 {
 	struct Stack stack = { out, out, out + out_n };
 	for (__global const struct Token *in_p = in; in_p < in + in_n; in_p++)

@@ -117,4 +117,7 @@ __kernel void exec_range(__global const struct Token *in, unsigned int in_n, __g
 	struct Stack stack = { out, out, out + out_n };
 	for (__global const struct Token *in_p = in; in_p < in + in_n; in_p++)
 		exec(in_p, &stack);
+
+	for (__global struct Token *stack_p = stack.top; stack_p < stack.max; ++stack_p)
+		*stack_p = (struct Token) { -1, { .value = -1 } };
 }

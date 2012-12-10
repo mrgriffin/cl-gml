@@ -1,0 +1,2 @@
+TYPE(INT, 0)
+TYPE(OP, 1)

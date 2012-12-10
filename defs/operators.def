@@ -1,0 +1,11 @@
+OPERATOR(ADD, 0, ({
+	int b = pop_int(stack);
+	int a = pop_int(stack);
+	push_int(stack, a + b);
+}))
+
+OPERATOR(SUB, 1, ({
+	int b = pop_int(stack);
+	int a = pop_int(stack);
+	push_int(stack, a - b);
+}))

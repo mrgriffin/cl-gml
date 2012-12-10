@@ -5,28 +5,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
-
-enum Type : int
-{
-	TYPE_INT = 0,
-	TYPE_OP = 1,
-};
-
-enum Operator : int
-{
-	OP_ADD = 0,
-	OP_SUB = 1,
-};
-
-struct Token
-{
-	Type type;
-	union
-	{
-		int value;
-		Operator op;
-	} data;
-};
+#include "token.h"
 
 int main()
 {
@@ -72,7 +51,7 @@ int main()
 		cl::Program program = cl::Program(context, source);
 
 		// Build program for these specific devices
-		program.build(devices);
+		program.build(devices, "-Idefs");
 
 		// Make kernel
 		cl::Kernel kernel(program, "exec_range");

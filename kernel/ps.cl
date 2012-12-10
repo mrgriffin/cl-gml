@@ -1,24 +1,4 @@
-enum Type
-{
-	TYPE_INT = 0,
-	TYPE_OP = 1,
-};
-
-enum Operator
-{
-	OP_ADD = 0,
-	OP_SUB = 1,
-};
-
-struct Token
-{
-	enum Type type;
-	union
-	{
-		int value;
-		enum Operator operator;
-	} data;
-};
+#include "token.h"
 
 struct Stack
 {
@@ -82,7 +62,7 @@ void exec_sub(struct Stack *stack)
  */
 void exec_op(__global const struct Token *token, struct Stack *stack)
 {
-	switch (token->data.operator) {
+	switch (token->data.op) {
 	case OP_ADD: exec_add(stack); break;
 	case OP_SUB: exec_sub(stack); break;
 	// TODO: assert(false) if we reach here.

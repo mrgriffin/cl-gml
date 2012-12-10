@@ -1,3 +1,4 @@
+#include "pp.h"
 #include "token.h"
 
 struct Stack
@@ -35,27 +36,9 @@ void exec_int(__global const struct Token *token, struct Stack *stack)
 	push_int(stack, token->data.value);
 }
 
-/*!
- * \brief Executes the addition operator.
- * \detail Pops \c b and \c a from \p stack and pushes \c a + \c b to \p stack.
- */
-void exec_add(struct Stack *stack)
-{
-	int b = pop_int(stack);
-	int a = pop_int(stack);
-	push_int(stack, a + b);
-}
-
-/*!
- * \brief Executes the subtraction operator.
- * \detail Pops \c b and \c a from \p stack and pushes \c a - \c b to \p stack.
- */
-void exec_sub(struct Stack *stack)
-{
-	int b = pop_int(stack);
-	int a = pop_int(stack);
-	push_int(stack, a - b);
-}
+#define OPERATOR(name, value, func) void exec_ ## name (struct Stack *stack) UNBOX func
+#include "operators.def"
+#undef OPERATOR
 
 /*!
  * \brief Executes an operator token.
@@ -63,8 +46,9 @@ void exec_sub(struct Stack *stack)
 void exec_op(__global const struct Token *token, struct Stack *stack)
 {
 	switch (token->data.op) {
-	case OP_ADD: exec_add(stack); break;
-	case OP_SUB: exec_sub(stack); break;
+	#define OPERATOR(name, value, func) case OP_ ## name: exec_ ## name (stack); break;
+	#include "operators.def"
+	#undef OPERATOR
 	// TODO: assert(false) if we reach here.
 	}
 }

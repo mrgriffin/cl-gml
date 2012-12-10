@@ -9,7 +9,7 @@
 int main()
 {
 	enum { TYPE_INT = 0, TYPE_OP = 1 };
-	enum { OP_ADD = 1, OP_SUB = 2 };
+	enum { OP_ADD = 0, OP_SUB = 1 };
 
 	int in[] = {
 		TYPE_INT, 1,
@@ -76,10 +76,10 @@ int main()
 		queue.enqueueTask(kernel);
 
 		// Read buffer stackOut into a local list
-		int out;
-		queue.enqueueReadBuffer(bufferOut, CL_TRUE, 0, sizeof out, &out);
+		int out[2];
+		queue.enqueueReadBuffer(bufferOut, CL_TRUE, 0, sizeof out, out);
 
-		std::cout << " = " << out << std::endl;
+		std::cout << "[" << out[0] << "] " << out[1] << std::endl;
 	} catch(cl::Error error) {
 		std::cout << error.what() << "(" << error.err() << ")" << std::endl;
 	}

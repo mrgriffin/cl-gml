@@ -31,7 +31,7 @@ void push_int(struct Stack *stack, int value)
  * \brief Executes an int token.
  * \detail Pushes the int onto \p stack.
  */
-void exec_int(__global const struct Token *token, struct Stack *stack)
+void exec_INT(__global const struct Token *token, struct Stack *stack)
 {
 	push_int(stack, token->data.value);
 }
@@ -42,7 +42,7 @@ void exec_int(__global const struct Token *token, struct Stack *stack)
 /*!
  * \brief Executes an operator token.
  */
-void exec_op(__global const struct Token *token, struct Stack *stack)
+void exec_OP(__global const struct Token *token, struct Stack *stack)
 {
 	switch (token->data.op) {
 	#define OPERATOR(name, value, func) case OP_ ## name: exec_ ## name (stack); break;
@@ -61,8 +61,8 @@ void exec_op(__global const struct Token *token, struct Stack *stack)
 void exec(__global const struct Token *token, struct Stack *stack)
 {
 	switch (token->type) {
-	case TYPE_INT: exec_int(token, stack); break;
-	case TYPE_OP:  exec_op(token, stack); break;
+	#define TYPE(name, value) case TYPE_ ## name: exec_ ## name(token, stack); break;
+	#include "types.def"
 	// TODO: assert(false) if we reach here.
 	}
 }

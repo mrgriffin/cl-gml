@@ -6,21 +6,40 @@
 #include <string>
 #include <vector>
 
+enum Type : int
+{
+	TYPE_INT = 0,
+	TYPE_OP = 1,
+};
+
+enum Operator : int
+{
+	OP_ADD = 0,
+	OP_SUB = 1,
+};
+
+struct Token
+{
+	Type type;
+	union
+	{
+		int value;
+		Operator op;
+	} data;
+};
+
 int main()
 {
-	enum { TYPE_INT = 0, TYPE_OP = 1 };
-	enum { OP_ADD = 1, OP_SUB = 2 };
-
-	int in[] = {
-		TYPE_INT, 1,
-		TYPE_INT, 2,
-		TYPE_OP,  OP_ADD,
-		TYPE_INT, 4,
-		TYPE_INT, 3,
-		TYPE_OP,  OP_ADD,
-		TYPE_OP,  OP_ADD,
-		TYPE_INT, 5,
-		TYPE_OP,  OP_SUB
+	Token in[] = {
+		{ TYPE_INT, { .value = 1 } },
+		{ TYPE_INT, { .value = 2 } },
+		{ TYPE_OP,  { .op = OP_ADD } },
+		{ TYPE_INT, { .value = 4 } },
+		{ TYPE_INT, { .value = 3 } },
+		{ TYPE_OP,  { .op = OP_ADD } },
+		{ TYPE_OP,  { .op = OP_ADD } },
+		{ TYPE_INT, { .value = 5 } },
+		{ TYPE_OP,  { .op = OP_SUB } },
 	};
 
 	try {
@@ -76,10 +95,11 @@ int main()
 		queue.enqueueTask(kernel);
 
 		// Read buffer stackOut into a local list
-		int out;
-		queue.enqueueReadBuffer(bufferOut, CL_TRUE, 0, sizeof out, &out);
+		Token out[sizeof in / sizeof in[0]];
+		queue.enqueueReadBuffer(bufferOut, CL_TRUE, 0, sizeof out, out);
 
-		std::cout << " = " << out << std::endl;
+		for (std::size_t i = 0; i < sizeof out / sizeof out[0]; ++i)
+			std::cout << "[" << out[i].type << "] " << out[i].data.value << std::endl;
 	} catch(cl::Error error) {
 		std::cout << error.what() << "(" << error.err() << ")" << std::endl;
 	}

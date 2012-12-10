@@ -8,9 +8,20 @@
 
 int main()
 {
-	enum { OP_INT = 0, OP_ADD = 1, OP_SUB = 2 };
+	enum { TYPE_INT = 0, TYPE_OP = 1 };
+	enum { OP_ADD = 1, OP_SUB = 2 };
 
-	int stackIn[] = { OP_INT, 1, OP_INT, 2, OP_ADD, OP_INT, 4, OP_INT, 3, OP_ADD, OP_ADD, OP_INT, 5, OP_SUB };
+	int in[] = {
+		TYPE_INT, 1,
+		TYPE_INT, 2,
+		TYPE_OP,  OP_ADD,
+		TYPE_INT, 4,
+		TYPE_INT, 3,
+		TYPE_OP,  OP_ADD,
+		TYPE_OP,  OP_ADD,
+		TYPE_INT, 5,
+		TYPE_OP,  OP_SUB
+	};
 
 	try {
 		// Get available platforms
@@ -32,7 +43,7 @@ int main()
 		cl::CommandQueue queue = cl::CommandQueue(context, devices[0]);
 
 		// Read source file
-		std::ifstream sourceFile("kernel//stack_adder.cl");
+		std::ifstream sourceFile("kernel/ps.cl");
 		std::string sourceCode(
 			std::istreambuf_iterator<char>(sourceFile),
 			(std::istreambuf_iterator<char>()));
@@ -45,29 +56,30 @@ int main()
 		program.build(devices);
 
 		// Make kernel
-		cl::Kernel kernel(program, "stack_interpret");
+		cl::Kernel kernel(program, "exec_range");
 
 		// Create memory buffers
 		// TODO: How do we decide the size of the output stack?
-		cl::Buffer bufferStackIn = cl::Buffer(context, CL_MEM_READ_ONLY, sizeof stackIn);
-		cl::Buffer bufferStackOut = cl::Buffer(context, CL_MEM_WRITE_ONLY, sizeof stackIn);
+		cl::Buffer bufferIn = cl::Buffer(context, CL_MEM_READ_ONLY, sizeof in);
+		cl::Buffer bufferOut = cl::Buffer(context, CL_MEM_WRITE_ONLY, sizeof in);
 
 		// Copy stackIn to the memory buffers
-		queue.enqueueWriteBuffer(bufferStackIn, CL_TRUE, 0, sizeof stackIn, stackIn);
+		queue.enqueueWriteBuffer(bufferIn, CL_TRUE, 0, sizeof in, in);
 
 		// Set arguments to kernel
-		kernel.setArg(0, bufferStackIn);
-		kernel.setArg(1, (unsigned int)(sizeof stackIn / sizeof stackIn[0]));
-		kernel.setArg(2, bufferStackOut);
+		kernel.setArg(0, bufferIn);
+		kernel.setArg(1, (unsigned int)(sizeof in / sizeof in[0]));
+		kernel.setArg(2, bufferOut);
+		kernel.setArg(3, (unsigned int)(sizeof in / sizeof in[0]));
 
 		// Run the kernel
 		queue.enqueueTask(kernel);
 
 		// Read buffer stackOut into a local list
-		int stackOut;
-		queue.enqueueReadBuffer(bufferStackOut, CL_TRUE, 0, sizeof stackOut, &stackOut);
+		int out;
+		queue.enqueueReadBuffer(bufferOut, CL_TRUE, 0, sizeof out, &out);
 
-		std::cout << " = " << stackOut << std::endl;
+		std::cout << " = " << out << std::endl;
 	} catch(cl::Error error) {
 		std::cout << error.what() << "(" << error.err() << ")" << std::endl;
 	}

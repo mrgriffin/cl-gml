@@ -1,48 +1,55 @@
-int pop_int(__global const int *stack, unsigned int length, unsigned int *i)
+struct Stack
 {
-	// TODO: Assert that i < length.
-	return stack[--(*i)];
+	__global int *bottom; //!< The bottom of this stack.
+	__global int *top;    //!< The top of this stack.
+	__global int *max;    //!< The maximum top of this stack.
+};
+
+int pop_int(struct Stack *stack)
+{
+	// TODO: Assert that top >= bottom.
+	return *--stack->top;
 }
 
-void push_int(__global int *stack, unsigned int length, unsigned int *i, int value)
+void push_int(struct Stack *stack, int value)
 {
-	// TODO: Assert that i < length.
-	stack[(*i)++] = value;
+	// TODO: Assert that top < max.
+	*stack->top++ = value;
 }
 
-__global const int *exec_int(__global const int *token, __global int *out, unsigned int out_n, unsigned int *op)
+__global const int *exec_int(__global const int *token, struct Stack *stack)
 {
 	int value = *(token + 1);
 
-	push_int(out, out_n, op, value);
+	push_int(stack, value);
 
 	return token + 2;
 }
 
-__global const int *exec_add(__global int *out, unsigned int out_n, unsigned int *op)
+__global const int *exec_add(struct Stack *stack)
 {
-	int b = pop_int(out, out_n, op);
-	int a = pop_int(out, out_n, op);
-	push_int(out, out_n, op, a + b);
+	int b = pop_int(stack);
+	int a = pop_int(stack);
+	push_int(stack, a + b);
 }
 
-__global const int *exec_sub(__global int *out, unsigned int out_n, unsigned int *op)
+__global const int *exec_sub(struct Stack *stack)
 {
-	int b = pop_int(out, out_n, op);
-	int a = pop_int(out, out_n, op);
-	push_int(out, out_n, op, a - b);
+	int b = pop_int(stack);
+	int a = pop_int(stack);
+	push_int(stack, a - b);
 }
 
-__global const int *exec_op(__global const int *token, __global int *out, unsigned int out_n, unsigned int *op)
+__global const int *exec_op(__global const int *token, struct Stack *stack)
 {
 	enum {
 		OP_ADD = 1,
 		OP_SUB = 2,
-	} op_ = *(token + 1);
+	} op = *(token + 1);
 
-	switch (op_) {
-	case OP_ADD: exec_add(out, out_n, op); return token + 2;
-	case OP_SUB: exec_sub(out, out_n, op); return token + 2;
+	switch (op) {
+	case OP_ADD: exec_add(stack); return token + 2;
+	case OP_SUB: exec_sub(stack); return token + 2;
 	default: return 0; // TODO: assert(false) if we reach here.
 	}
 }
@@ -54,7 +61,7 @@ __global const int *exec_op(__global const int *token, __global int *out, unsign
  * \param out_n the maximum size of the stack.
  * \return a pointer to the token after the token at \p token.
  */
-__global const int *exec(__global const int *token, __global int *out, unsigned int out_n, unsigned int *op)
+__global const int *exec(__global const int *token, struct Stack *stack)
 {
 	enum {
 		TYPE_INT = 0,
@@ -62,8 +69,8 @@ __global const int *exec(__global const int *token, __global int *out, unsigned 
 	} type = *token;
 
 	switch (type) {
-	case TYPE_INT: return exec_int(token, out, out_n, op); break;
-	case TYPE_OP:  return exec_op(token, out, out_n, op); break;
+	case TYPE_INT: return exec_int(token, stack); break;
+	case TYPE_OP:  return exec_op(token, stack); break;
 	default: return 0; // TODO: assert(false) if we reach here.
 	}
 }
@@ -78,8 +85,7 @@ __global const int *exec(__global const int *token, __global int *out, unsigned 
 __kernel void exec_range(__global const int *in, unsigned int in_n, __global int *out, unsigned int out_n)
 {
 	__global const int *in_p = in;
-	unsigned int op = 0;
 	while (in_p < in + in_n) {
-		in_p = exec(in_p, out, out_n, &op);
+		in_p = exec(in_p, &(struct Stack) { out, out, out + out_n });
 	}
 }

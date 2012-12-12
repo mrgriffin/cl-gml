@@ -24,6 +24,16 @@ void push_ ## name (struct Stack *stack, repr name) \
 }
 #include "types.def"
 
+#define DECL_VAR(x) INVOKE_(ARG2, UNBOX x) = CONCAT(pop_, INVOKE_(ARG1, UNBOX x)) (stack);
+#define OPERATOR(name, value, args, block) \
+void exec_ ## name (struct Stack *stack) \
+{ \
+	INVOKE(FOR_EACH, DECL_VAR, REVERSE(UNBOX args)) \
+	UNBOX block \
+}
+#include "operators.def"
+#undef DECL_VAR
+
 /*!
  * \brief Executes an int token.
  * \detail Pushes the int onto \p stack.
@@ -33,16 +43,13 @@ void exec_INT(__global const struct Token *token, struct Stack *stack)
 	push_INT(stack, token->data.INT);
 }
 
-#define OPERATOR(name, value, func) void exec_ ## name (struct Stack *stack) UNBOX func
-#include "operators.def"
-
 /*!
  * \brief Executes an operator token.
  */
 void exec_OP(__global const struct Token *token, struct Stack *stack)
 {
 	switch (token->data.op) {
-	#define OPERATOR(name, value, func) case OP_ ## name: exec_ ## name (stack); break;
+	#define OPERATOR(name, value, args, block) case OP_ ## name: exec_ ## name (stack); break;
 	#include "operators.def"
 	// TODO: assert(false) if we reach here.
 	}

@@ -18,7 +18,7 @@ int main()
 		{ TYPE_OP,  { .OP = OP_ADD } },
 		{ TYPE_OP,  { .OP = OP_ADD } },
 		{ TYPE_INT, { .INT = 5 } },
-		//{ TYPE_OP,  { .OP = OP_SUB } },
+		{ TYPE_OP,  { .OP = OP_SUB } },
 	};
 
 	try {

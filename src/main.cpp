@@ -18,7 +18,7 @@ int main()
 		{ TYPE_OP,  { .OP = OP_ADD } },
 		{ TYPE_OP,  { .OP = OP_ADD } },
 		{ TYPE_INT, { .INT = 5 } },
-		{ TYPE_OP,  { .OP = OP_SUB } },
+		//{ TYPE_OP,  { .OP = OP_SUB } },
 	};
 
 	try {
@@ -51,7 +51,20 @@ int main()
 		cl::Program program = cl::Program(context, source);
 
 		// Build program for these specific devices
-		program.build(devices, "-Idefs");
+		program.build(devices, "-Idefs", [] (cl_program program, void* data) {
+			std::vector<cl::Device> const& devices = *(std::vector<cl::Device>*)data;
+			cl_build_status build_status;
+			clGetProgramBuildInfo(program, devices[0](), CL_PROGRAM_BUILD_STATUS, sizeof(cl_build_status), &build_status, NULL);
+
+			char *build_log;
+			size_t ret_val_size;
+			clGetProgramBuildInfo(program, devices[0](), CL_PROGRAM_BUILD_LOG, 0, NULL, &ret_val_size);
+
+			build_log = new char[ret_val_size+1];
+			clGetProgramBuildInfo(program, devices[0](), CL_PROGRAM_BUILD_LOG, ret_val_size, build_log, NULL);
+			build_log[ret_val_size] = '\0';
+			printf("BUILD LOG: \n %s", build_log);
+		}, &devices);
 
 		// Make kernel
 		cl::Kernel kernel(program, "exec_range");

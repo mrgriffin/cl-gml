@@ -8,10 +8,12 @@ OPERATOR(ADD, 0, (
 	))
 ))
 
+#if 0
 OPERATOR(SUB, 1, (
 	(((INT, int a), (INT, int b)), (
 		push_INT(stack, a - b);
 	))
 ))
+#endif
 
 #undef OPERATOR

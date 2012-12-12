@@ -9,7 +9,7 @@ enum Type
 
 enum Operator
 {
-	#define OPERATOR(name, value, args, block) OP_ ## name = value,
+	#define OPERATOR(name, value, funcs) OP_ ## name = value,
 	#include "operators.def"
 };
 

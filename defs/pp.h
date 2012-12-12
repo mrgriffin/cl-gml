@@ -6,6 +6,7 @@
 
 #define INVOKE(what, ...) what(__VA_ARGS__)
 #define INVOKE_(what, ...) what(__VA_ARGS__)
+#define INVOKE_U(what, ...) what __VA_ARGS__
 
 #define UNBOX(...) __VA_ARGS__
 
@@ -30,6 +31,16 @@
 #define FE_7(what, x, ...) what(x) FE_6(what, __VA_ARGS__)
 #define FE_8(what, x, ...) what(x) FE_7(what, __VA_ARGS__)
 #define FOR_EACH(what, ...) GET_MACRO(__VA_ARGS__, FE_8, FE_7, FE_6, FE_5, FE_4, FE_3, FE_2, FE_1)(what, __VA_ARGS__)
+
+#define FE_1_(what, x) what(x)
+#define FE_2_(what, x, ...) what(x) FE_1_(what, __VA_ARGS__)
+#define FE_3_(what, x, ...) what(x) FE_2_(what, __VA_ARGS__)
+#define FE_4_(what, x, ...) what(x) FE_3_(what, __VA_ARGS__)
+#define FE_5_(what, x, ...) what(x) FE_4_(what, __VA_ARGS__)
+#define FE_6_(what, x, ...) what(x) FE_5_(what, __VA_ARGS__)
+#define FE_7_(what, x, ...) what(x) FE_6_(what, __VA_ARGS__)
+#define FE_8_(what, x, ...) what(x) FE_7_(what, __VA_ARGS__)
+#define FOR_EACH_(what, ...) GET_MACRO(__VA_ARGS__, FE_8_, FE_7_, FE_6_, FE_5_, FE_4_, FE_3_, FE_2_, FE_1_)(what, __VA_ARGS__)
 
 #define REVERSE_1(x) x
 #define REVERSE_2(x, ...) __VA_ARGS__, x

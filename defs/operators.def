@@ -2,7 +2,16 @@
 #error "must define OPERATOR before including operators"
 #endif
 
-OPERATOR(ADD, 0, ((INT, int a), (INT, int b)), ({ push_INT(stack, a + b); }))
-OPERATOR(SUB, 1, ((INT, int a), (INT, int b)), ({ push_INT(stack, a - b); }))
+OPERATOR(ADD, 0, (
+	(((INT, int a), (INT, int b)), (
+		push_INT(stack, a + b);
+	))
+))
+
+OPERATOR(SUB, 1, (
+	(((INT, int a), (INT, int b)), (
+		push_INT(stack, a - b);
+	))
+))
 
 #undef OPERATOR

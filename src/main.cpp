@@ -10,15 +10,15 @@
 int main()
 {
 	Token in[] = {
-		{ TYPE_INT, { .value = 1 } },
-		{ TYPE_INT, { .value = 2 } },
-		{ TYPE_OP,  { .op = OP_ADD } },
-		{ TYPE_INT, { .value = 4 } },
-		{ TYPE_INT, { .value = 3 } },
-		{ TYPE_OP,  { .op = OP_ADD } },
-		{ TYPE_OP,  { .op = OP_ADD } },
-		{ TYPE_INT, { .value = 5 } },
-		{ TYPE_OP,  { .op = OP_SUB } },
+		{ TYPE_INT, { .INT = 1 } },
+		{ TYPE_INT, { .INT = 2 } },
+		{ TYPE_OP,  { .OP = OP_ADD } },
+		{ TYPE_INT, { .INT = 4 } },
+		{ TYPE_INT, { .INT = 3 } },
+		{ TYPE_OP,  { .OP = OP_ADD } },
+		{ TYPE_OP,  { .OP = OP_ADD } },
+		{ TYPE_INT, { .INT = 5 } },
+		{ TYPE_OP,  { .OP = OP_SUB } },
 	};
 
 	try {
@@ -78,7 +78,7 @@ int main()
 		queue.enqueueReadBuffer(bufferOut, CL_TRUE, 0, sizeof out, out);
 
 		for (std::size_t i = 0; i < sizeof out / sizeof out[0]; ++i)
-			std::cout << "[" << out[i].type << "] " << out[i].data.value << std::endl;
+			std::cout << "[" << out[i].type << "] " << out[i].data.INT << std::endl;
 	} catch(cl::Error error) {
 		std::cout << error.what() << "(" << error.err() << ")" << std::endl;
 	}

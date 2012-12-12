@@ -10,15 +10,15 @@
 int main()
 {
 	Token in[] = {
-		{ TYPE_INT, { .value = 1 } },
-		{ TYPE_INT, { .value = 2 } },
-		{ TYPE_OP,  { .op = OP_ADD } },
-		{ TYPE_INT, { .value = 4 } },
-		{ TYPE_INT, { .value = 3 } },
-		{ TYPE_OP,  { .op = OP_ADD } },
-		{ TYPE_OP,  { .op = OP_ADD } },
-		{ TYPE_INT, { .value = 5 } },
-		{ TYPE_OP,  { .op = OP_SUB } },
+		{ TYPE_INT, { .INT = 1 } },
+		{ TYPE_INT, { .INT = 2 } },
+		{ TYPE_OP,  { .OP = OP_ADD } },
+		{ TYPE_INT, { .INT = 4 } },
+		{ TYPE_INT, { .INT = 3 } },
+		{ TYPE_OP,  { .OP = OP_ADD } },
+		{ TYPE_OP,  { .OP = OP_ADD } },
+		{ TYPE_INT, { .INT = 5 } },
+		{ TYPE_OP,  { .OP = OP_SUB } },
 	};
 
 	try {
@@ -51,7 +51,20 @@ int main()
 		cl::Program program = cl::Program(context, source);
 
 		// Build program for these specific devices
-		program.build(devices, "-Idefs");
+		program.build(devices, "-Idefs", [] (cl_program program, void* data) {
+			std::vector<cl::Device> const& devices = *(std::vector<cl::Device>*)data;
+			cl_build_status build_status;
+			clGetProgramBuildInfo(program, devices[0](), CL_PROGRAM_BUILD_STATUS, sizeof(cl_build_status), &build_status, NULL);
+
+			char *build_log;
+			size_t ret_val_size;
+			clGetProgramBuildInfo(program, devices[0](), CL_PROGRAM_BUILD_LOG, 0, NULL, &ret_val_size);
+
+			build_log = new char[ret_val_size+1];
+			clGetProgramBuildInfo(program, devices[0](), CL_PROGRAM_BUILD_LOG, ret_val_size, build_log, NULL);
+			build_log[ret_val_size] = '\0';
+			printf("BUILD LOG: \n %s", build_log);
+		}, &devices);
 
 		// Make kernel
 		cl::Kernel kernel(program, "exec_range");
@@ -78,7 +91,7 @@ int main()
 		queue.enqueueReadBuffer(bufferOut, CL_TRUE, 0, sizeof out, out);
 
 		for (std::size_t i = 0; i < sizeof out / sizeof out[0]; ++i)
-			std::cout << "[" << out[i].type << "] " << out[i].data.value << std::endl;
+			std::cout << "[" << out[i].type << "] " << out[i].data.INT << std::endl;
 	} catch(cl::Error error) {
 		std::cout << error.what() << "(" << error.err() << ")" << std::endl;
 	}

@@ -3,15 +3,15 @@
 #endif
 
 OPERATOR(ADD, 0, ({
-	int b = pop_int(stack);
-	int a = pop_int(stack);
-	push_int(stack, a + b);
+	int b = pop_INT(stack);
+	int a = pop_INT(stack);
+	push_INT(stack, a + b);
 }))
 
 OPERATOR(SUB, 1, ({
-	int b = pop_int(stack);
-	int a = pop_int(stack);
-	push_int(stack, a - b);
+	int b = pop_INT(stack);
+	int a = pop_INT(stack);
+	push_INT(stack, a - b);
 }))
 
 #undef OPERATOR

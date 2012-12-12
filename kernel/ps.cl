@@ -8,24 +8,21 @@ struct Stack
 	__global struct Token *max;    //!< The maximum top of this stack.
 };
 
-/*!
- * \brief Pops an int off \p stack.
- */
-int pop_int(struct Stack *stack)
-{
-	// TODO: Assert that top >= bottom.
-	// TODO: Assert that top->type == TYPE_INT.
-	return (--stack->top)->data.INT;
-}
+// TODO: Assert that top >= bottom.
+// TODO: Assert that top->type == TYPE_ ## name.
 
-/*!
- * \brief Pushes an int onto \p stack.
- */
-void push_int(struct Stack *stack, int value)
-{
-	// TODO: Assert that top < max.
-	*stack->top++ = (struct Token) { TYPE_INT, { .INT = value } };
+// TODO: Assert that top < max.
+#define TYPE(name, value, repr) \
+repr pop_ ## name (struct Stack *stack) \
+{ \
+	return (--stack->top)->data.name; \
+} \
+\
+void push_ ## name (struct Stack *stack, repr name) \
+{ \
+	*stack->top++ = (struct Token) { TYPE_ ## name, { .name = name } }; \
 }
+#include "types.def"
 
 /*!
  * \brief Executes an int token.
@@ -33,7 +30,7 @@ void push_int(struct Stack *stack, int value)
  */
 void exec_INT(__global const struct Token *token, struct Stack *stack)
 {
-	push_int(stack, token->data.INT);
+	push_INT(stack, token->data.INT);
 }
 
 #define OPERATOR(name, value, func) void exec_ ## name (struct Stack *stack) UNBOX func

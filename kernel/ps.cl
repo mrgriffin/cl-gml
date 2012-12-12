@@ -15,7 +15,7 @@ int pop_int(struct Stack *stack)
 {
 	// TODO: Assert that top >= bottom.
 	// TODO: Assert that top->type == TYPE_INT.
-	return (--stack->top)->data.value;
+	return (--stack->top)->data.INT;
 }
 
 /*!
@@ -24,7 +24,7 @@ int pop_int(struct Stack *stack)
 void push_int(struct Stack *stack, int value)
 {
 	// TODO: Assert that top < max.
-	*stack->top++ = (struct Token) { TYPE_INT, { .value = value } };
+	*stack->top++ = (struct Token) { TYPE_INT, { .INT = value } };
 }
 
 /*!
@@ -33,7 +33,7 @@ void push_int(struct Stack *stack, int value)
  */
 void exec_INT(__global const struct Token *token, struct Stack *stack)
 {
-	push_int(stack, token->data.value);
+	push_int(stack, token->data.INT);
 }
 
 #define OPERATOR(name, value, func) void exec_ ## name (struct Stack *stack) UNBOX func
@@ -61,7 +61,7 @@ void exec_OP(__global const struct Token *token, struct Stack *stack)
 void exec(__global const struct Token *token, struct Stack *stack)
 {
 	switch (token->type) {
-	#define TYPE(name, value) case TYPE_ ## name: exec_ ## name (token, stack); break;
+	#define TYPE(name, value, repr) case TYPE_ ## name: exec_ ## name (token, stack); break;
 	#include "types.def"
 	// TODO: assert(false) if we reach here.
 	}

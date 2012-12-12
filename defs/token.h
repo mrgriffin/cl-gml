@@ -3,7 +3,7 @@
 
 enum Type
 {
-	#define TYPE(name, value) TYPE_ ## name = value,
+	#define TYPE(name, value, repr) TYPE_ ## name = value,
 	#include "types.def"
 };
 
@@ -18,8 +18,8 @@ struct Token
 	enum Type type;
 	union
 	{
-		int value;
-		enum Operator op;
+		#define TYPE(name, value, repr) repr name;
+		#include "types.def"
 	} data;
 };
 

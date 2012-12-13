@@ -2,7 +2,7 @@
 #error "must define TYPE before including types"
 #endif
 
-TYPE(INT, 0, int)
-TYPE(OP, 1, enum Operator)
+TYPE(INT, int)
+TYPE(OP, enum Operator)
 
 #undef TYPE

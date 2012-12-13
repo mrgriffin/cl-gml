@@ -8,6 +8,11 @@ struct Stack
 	__global struct Token *max;    //!< The maximum top of this stack.
 };
 
+void push(struct Stack *stack, struct Token token)
+{
+	*stack->top++ = token;
+}
+
 #if 0
 
 TYPE(INT, 0, int) =>
@@ -80,15 +85,6 @@ void exec_ ## name (struct Stack *stack) \
 #undef DECL_FN
 
 /*!
- * \brief Executes an int token.
- * \detail Pushes the int onto \p stack.
- */
-void exec_INT(__global const struct Token *token, struct Stack *stack)
-{
-	push_INT(stack, token->data.INT);
-}
-
-/*!
  * \brief Executes an operator token.
  */
 void exec_OP(__global const struct Token *token, struct Stack *stack)
@@ -110,8 +106,8 @@ void exec_OP(__global const struct Token *token, struct Stack *stack)
 void exec(__global const struct Token *token, struct Stack *stack)
 {
 	switch (token->type) {
-	#define TYPE(name, repr) case TYPE_ ## name: exec_ ## name (token, stack); break;
-	#include "types.def"
+		case TYPE_OP: exec_OP(token, stack); break;
+		default:      push(stack, *token); break;
 	// TODO: assert(false) if we reach here.
 	}
 }

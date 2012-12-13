@@ -9,3 +9,9 @@ BOOST_AUTO_TEST_CASE(INT)
 	auto out = exec({ { TYPE_INT, { .INT = 0 } } });
 	checkStack(out, { { TYPE_INT, { .INT = 0 } } });
 }
+
+BOOST_AUTO_TEST_CASE(FLOAT)
+{
+	auto out = exec({ { TYPE_FLOAT, { .FLOAT = 1 } } });
+	checkStack(out, { { TYPE_FLOAT, { .FLOAT = 1 } } });
+}

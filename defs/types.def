@@ -3,6 +3,7 @@
 #endif
 
 TYPE(INT, int)
+TYPE(FLOAT, float)
 TYPE(OP, enum Operator)
 
 #undef TYPE

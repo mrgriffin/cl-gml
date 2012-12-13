@@ -2,13 +2,15 @@
 #error "must define OPERATOR before including operators"
 #endif
 
-OPERATOR(ADD, 0, (
+OPERATOR(ADD, (
 	(((INT, int a), (INT, int b)), (
 		push_INT(stack, a + b);
+	)), (((FLOAT, float a), (FLOAT, float b)), (
+		push_FLOAT(stack, a + b);
 	))
 ))
 
-OPERATOR(SUB, 1, (
+OPERATOR(SUB, (
 	(((INT, int a), (INT, int b)), (
 		push_INT(stack, a - b);
 	))

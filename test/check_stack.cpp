@@ -10,7 +10,7 @@ void checkStack(std::stack<Token> const& actual, std::stack<Token> const& expect
 		BOOST_TEST_CHECKPOINT("checking element at position " << --i);
 		BOOST_CHECK_EQUAL(expected_.top().type, actual_.top().type);
 		switch (expected_.top().type) {
-			#define TYPE(name, value, repr) case TYPE_ ## name: \
+			#define TYPE(name, repr) case TYPE_ ## name: \
 				BOOST_CHECK_EQUAL(expected_.top().data.name, actual_.top().data.name); \
 				break;
 			#include "types.def"

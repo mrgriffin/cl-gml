@@ -4,15 +4,9 @@
 int main()
 {
 	Token in[] = {
-		{ TYPE_INT, { .INT = 1 } },
-		{ TYPE_INT, { .INT = 2 } },
+		{ TYPE_FLOAT, { .FLOAT = 1 } },
+		{ TYPE_FLOAT, { .FLOAT = .5f } },
 		{ TYPE_OP,  { .OP = OP_ADD } },
-		{ TYPE_INT, { .INT = 4 } },
-		{ TYPE_INT, { .INT = 3 } },
-		{ TYPE_OP,  { .OP = OP_ADD } },
-		{ TYPE_OP,  { .OP = OP_ADD } },
-		{ TYPE_INT, { .INT = 5 } },
-		{ TYPE_OP,  { .OP = OP_SUB } },
 	};
 
 	try {
@@ -20,7 +14,7 @@ int main()
 		
 		while (!stack.empty()) {
 			auto e = stack.top();
-			std::cout << "[" << e.type << "] " << e.data.INT << std::endl;
+			std::cout << "[" << e.type << "] " << e.data.FLOAT << std::endl;
 			stack.pop();
 		}
 	} catch(cl::Error error) {

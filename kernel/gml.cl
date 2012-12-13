@@ -8,6 +8,11 @@ struct Stack
 	__global struct Token *max;    //!< The maximum top of this stack.
 };
 
+void push(struct Stack *stack, struct Token token)
+{
+	*stack->top++ = token;
+}
+
 #if 0
 
 TYPE(INT, 0, int) =>
@@ -27,7 +32,7 @@ void push_INT(struct Stack *stack, int INT)
 
 #endif
 
-#define TYPE(name, value, repr) \
+#define TYPE(name, repr) \
 repr pop_ ## name (struct Stack *stack) \
 { \
 	return (--stack->top)->data.name; \
@@ -68,7 +73,7 @@ if (INVOKE(FOR_EACH_, TYPE_EQ, INVOKE_U(REVERSE, INVOKE_(ARG1, UNBOX x))) 1) {\
 	INVOKE_U(UNBOX, INVOKE_(ARG2, UNBOX x)) \
 	/* HACK: Work around Clang bug by putting a break between the UNBOXed tuple and the return statement. */ return; \
 }
-#define OPERATOR(name, value, funcs) \
+#define OPERATOR(name, funcs) \
 void exec_ ## name (struct Stack *stack) \
 { \
 	__global struct Token *_top; \
@@ -80,21 +85,12 @@ void exec_ ## name (struct Stack *stack) \
 #undef DECL_FN
 
 /*!
- * \brief Executes an int token.
- * \detail Pushes the int onto \p stack.
- */
-void exec_INT(__global const struct Token *token, struct Stack *stack)
-{
-	push_INT(stack, token->data.INT);
-}
-
-/*!
  * \brief Executes an operator token.
  */
 void exec_OP(__global const struct Token *token, struct Stack *stack)
 {
 	switch (token->data.OP) {
-	#define OPERATOR(name, value, funcs) case OP_ ## name: exec_ ## name (stack); break;
+	#define OPERATOR(name, funcs) case OP_ ## name: exec_ ## name (stack); break;
 	#include "operators.def"
 	// TODO: assert(false) if we reach here.
 	}
@@ -110,8 +106,8 @@ void exec_OP(__global const struct Token *token, struct Stack *stack)
 void exec(__global const struct Token *token, struct Stack *stack)
 {
 	switch (token->type) {
-	#define TYPE(name, value, repr) case TYPE_ ## name: exec_ ## name (token, stack); break;
-	#include "types.def"
+		case TYPE_OP: exec_OP(token, stack); break;
+		default:      push(stack, *token); break;
 	// TODO: assert(false) if we reach here.
 	}
 }

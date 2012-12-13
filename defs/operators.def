@@ -13,6 +13,8 @@ OPERATOR(ADD, (
 OPERATOR(SUB, (
 	(((INT, int a), (INT, int b)), (
 		push_INT(stack, a - b);
+	)), (((FLOAT, float a), (FLOAT, float b)), (
+		push_FLOAT(stack, a - b);
 	))
 ))
 

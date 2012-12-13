@@ -5,8 +5,8 @@ int main()
 {
 	Token in[] = {
 		{ TYPE_FLOAT, { .FLOAT = 1 } },
-		{ TYPE_FLOAT, { .FLOAT = .5f } },
-		{ TYPE_OP,  { .OP = OP_ADD } },
+		{ TYPE_FLOAT, { .FLOAT = 2 } },
+		{ TYPE_OP,  { .OP = OP_SUB } },
 	};
 
 	try {

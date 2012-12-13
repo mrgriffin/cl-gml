@@ -71,13 +71,14 @@ _top = stack->top; \
 if (INVOKE(FOR_EACH_, TYPE_EQ, INVOKE_U(REVERSE, INVOKE_(ARG1, UNBOX x))) 1) {\
 	INVOKE(FOR_EACH_, DECL_VAR, INVOKE_U(REVERSE, INVOKE_(ARG1, UNBOX x))) \
 	INVOKE_U(UNBOX, INVOKE_(ARG2, UNBOX x)) \
-	/* HACK: Work around Clang bug by putting a break between the UNBOXed tuple and the return statement. */ return; \
+	return; \
 }
 #define OPERATOR(name, funcs) \
 void exec_ ## name (struct Stack *stack) \
 { \
 	__global struct Token *_top; \
 	FOR_EACH(DECL_FN, UNBOX funcs) \
+	/* HACK: Work around nVidia bug where last generated overload will be skipped. */ return; \
 }
 #include "operators.def"
 #undef TYPE_EQ

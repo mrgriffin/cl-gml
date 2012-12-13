@@ -1,5 +1,5 @@
 bin_PROGRAMS = cl-gml
-cl_gml_SOURCES = src/main.cpp
+cl_gml_SOURCES = src/main.cpp src/gml.cpp
 
 # TODO: Add the kernel programs to the tarball.
 

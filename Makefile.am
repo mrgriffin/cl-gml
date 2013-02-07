@@ -1,6 +1,9 @@
-bin_PROGRAMS = cl-gml
+bin_PROGRAMS = cl-gml cl-parse
 cl_gml_SOURCES = src/main.cpp src/gml.cpp
-AM_CPPFLAGS = -std=c++11 -Idefs -Isrc
+cl_parse_SOURCES = src/parse.l
+AM_CPPFLAGS = -Idefs -Isrc
+AM_CFLAGS = -std=c99
+AM_CXXFLAGS = -std=c++11
 LIBS += -lOpenCL
 
 check_PROGRAMS = test-types test-math

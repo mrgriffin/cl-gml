@@ -16,15 +16,15 @@ const char *ops[] = {
 
 %%
 
-[0-9]+ {
-	struct Token token = { .type = TYPE_INT };
-	token.data.INT = atoi(yytext);
-	fwrite(&token, sizeof token, 1, stdout);
-}
-
 [0-9]+\.[0-9]+ {
 	struct Token token = { .type = TYPE_FLOAT };
 	token.data.FLOAT = atof(yytext);
+	fwrite(&token, sizeof token, 1, stdout);
+}
+
+[0-9]+ {
+	struct Token token = { .type = TYPE_INT };
+	token.data.INT = atoi(yytext);
 	fwrite(&token, sizeof token, 1, stdout);
 }
 

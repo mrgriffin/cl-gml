@@ -1,20 +1,46 @@
+#include <cstdio>
 #include <iostream>
+#include <vector>
 #include "gml.hpp"
+
+std::ostream& operator<<(std::ostream& out, Token const& token)
+{
+	static const char *ops[] = {
+		#define OPERATOR(name, funcs) #name,
+		#include "operators.def"
+	};
+
+	switch (token.type) {
+	case TYPE_INT:
+		out << token.data.INT;
+		break;
+	case TYPE_FLOAT:
+		out << token.data.FLOAT;
+		break;
+	case TYPE_OP:
+		out << ops[token.data.OP];
+		break;
+	default:
+		out << "[unknown]";
+		break;
+	}
+
+	return out;
+}
 
 int main()
 {
-	Token in[] = {
-		{ TYPE_FLOAT, { .FLOAT = 1 } },
-		{ TYPE_FLOAT, { .FLOAT = 2 } },
-		{ TYPE_OP,  { .OP = OP_SUB } },
-	};
+	std::vector<Token> tokens;
+	Token token;
+	while (std::fread(&token, sizeof token, 1, stdin) == 1)
+		tokens.push_back(token);
 
 	try {
-		auto stack = exec(in, in + sizeof in / sizeof in[0]);
+		auto stack = exec(tokens.data(), tokens.data() + tokens.size());
 		
 		while (!stack.empty()) {
 			auto e = stack.top();
-			std::cout << "[" << e.type << "] " << e.data.FLOAT << std::endl;
+			std::cout << e << std::endl;
 			stack.pop();
 		}
 	} catch(cl::Error error) {

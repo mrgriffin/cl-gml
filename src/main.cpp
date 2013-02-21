@@ -5,6 +5,11 @@
 
 std::ostream& operator<<(std::ostream& out, Token const& token)
 {
+	static const char *types[] = {
+		#define TYPE(name, repr) #name,
+		#include "types.def"
+	};
+
 	static const char *ops[] = {
 		#define OPERATOR(name, funcs) #name,
 		#include "operators.def"
@@ -24,6 +29,8 @@ std::ostream& operator<<(std::ostream& out, Token const& token)
 		out << "[unknown]";
 		break;
 	}
+
+	out << " : " << types[token.type];
 
 	return out;
 }

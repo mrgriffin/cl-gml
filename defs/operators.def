@@ -2,7 +2,7 @@
 #error "must define OPERATOR before including operators"
 #endif
 
-OPERATOR(ADD, (
+OPERATOR(ADD, "add", (
 	(((INT, int a), (INT, int b)), (
 		push_INT(stack, a + b);
 	)), (((FLOAT, float a), (FLOAT, float b)), (
@@ -10,7 +10,7 @@ OPERATOR(ADD, (
 	))
 ))
 
-OPERATOR(SUB, (
+OPERATOR(SUB, "sub", (
 	(((INT, int a), (INT, int b)), (
 		push_INT(stack, a - b);
 	)), (((FLOAT, float a), (FLOAT, float b)), (

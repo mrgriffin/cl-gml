@@ -11,7 +11,7 @@ std::ostream& operator<<(std::ostream& out, Token const& token)
 	};
 
 	static const char *ops[] = {
-		#define OPERATOR(name, funcs) #name,
+		#define OPERATOR(name, token, funcs) token,
 		#include "operators.def"
 	};
 

@@ -117,7 +117,7 @@ if (INVOKE(FOR_EACH_, TYPE_EQ, INVOKE_U(REVERSE, INVOKE_(ARG1, UNBOX x))) 1) {\
 	INVOKE_U(UNBOX, INVOKE_(ARG2, UNBOX x)) \
 	return; \
 }
-#define OPERATOR(name, funcs) \
+#define OPERATOR(name, token, funcs) \
 void exec_ ## name (struct Stack *stack) \
 { \
 	__global struct Token *_top; \
@@ -135,7 +135,7 @@ void exec_ ## name (struct Stack *stack) \
 void exec_OP(__global const struct Token *token, struct Stack *stack)
 {
 	switch (token->data.OP) {
-	#define OPERATOR(name, funcs) case OP_ ## name: exec_ ## name (stack); break;
+	#define OPERATOR(name, token, funcs) case OP_ ## name: exec_ ## name (stack); break;
 	#include "operators.def"
 	// TODO: assert(false) if we reach here.
 	}

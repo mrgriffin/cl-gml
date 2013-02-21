@@ -5,5 +5,6 @@
 TYPE(INT, int)
 TYPE(FLOAT, float)
 TYPE(OP, enum Operator)
+TYPE(MARKER, enum Marker)
 
 #undef TYPE

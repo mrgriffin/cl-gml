@@ -1,6 +1,11 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
+enum Marker
+{
+	MARKER_ARRAY
+};
+
 enum Type
 {
 	#define TYPE(name, repr) TYPE_ ## name,
@@ -9,7 +14,7 @@ enum Type
 
 enum Operator
 {
-	#define OPERATOR(name, funcs) OP_ ## name,
+	#define OPERATOR(name, token, funcs) OP_ ## name,
 	#include "operators.def"
 };
 

@@ -8,6 +8,50 @@ struct Stack
 	__global struct Token *max;    //!< The maximum top of this stack.
 };
 
+struct HeapBin
+{
+	__global struct Token *begin; //!< The first address in this bin.
+	__global struct Token *end;   //!< One past the last address in this bin.
+	bool free;                    //!< Whether this bin is allocated.
+};
+
+#define MAX_BINS 16
+
+struct Heap
+{
+	__global struct Token *begin;  //!< The first address in this heap.
+	__global struct Token *end;    //!< One past the last address in this heap.
+	struct HeapBin bins[MAX_BINS]; //!< The bins in this heap.
+};
+
+void make_heap(struct Heap *heap, __global struct Token *begin, __global struct Token *end)
+{
+	heap->begin = begin;
+	heap->end = end;
+	size_t binSize = (end - begin) / MAX_BINS;
+	for (size_t i = 0; i < MAX_BINS; ++i)
+		heap->bins[i] = (struct HeapBin) { begin + binSize * i, begin + binSize * (i + 1), false };
+}
+
+__global struct Token *malloc(struct Heap *heap, size_t n)
+{
+	for (size_t i = 0; i < MAX_BINS; ++i) {
+		if (heap->bins[i].free && (heap->bins[i].end - heap->bins[i].begin) >= n) {
+			heap->bins[i].free = false;
+			return heap->bins[i].begin;
+		}
+	}
+
+	return 0;
+}
+
+void free(struct Heap *heap, __global struct Token *ptr)
+{
+	for (size_t i = 0; i < MAX_BINS; ++i)
+		if (!heap->bins[i].free && heap->bins[i].begin == ptr)
+			heap->bins[i].free = true;
+}
+
 void push(struct Stack *stack, struct Token token)
 {
 	*stack->top++ = token;
@@ -120,9 +164,13 @@ void exec(__global const struct Token *token, struct Stack *stack)
  * \param out a pointer to the stack.
  * \param out_n the maximum size of the stack.
  */
-__kernel void exec_range(__global const struct Token *in,unsigned in_n, __global struct Token *out, __global unsigned *out_n, __global struct Token *heap, unsigned heap_n)
+__kernel void exec_range(__global const struct Token *in, unsigned in_n, __global struct Token *out, __global unsigned *out_n, __global struct Token *heap, unsigned heap_n)
 {
 	struct Stack stack = { out, out, out + *out_n };
+
+	struct Heap heap_;
+	make_heap(&heap_, heap, heap + heap_n);
+
 	for (__global const struct Token *in_p = in; in_p < in + in_n; in_p++)
 		exec(in_p, &stack);
 		/* HACK: Work around nVidia bug where exec doesn't always get called. */

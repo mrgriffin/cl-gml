@@ -6,6 +6,18 @@ enum Marker
 	MARKER_ARRAY
 };
 
+#ifdef __OPENCL_VERSION__
+	typedef __global struct Token *HeapPointer;
+#else
+	typedef int HeapPointer;
+#endif
+
+struct Array
+{
+	HeapPointer begin;
+	HeapPointer end;
+};
+
 enum Type
 {
 	#define TYPE(name, repr) TYPE_ ## name,

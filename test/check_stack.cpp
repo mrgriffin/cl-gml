@@ -1,6 +1,16 @@
 #include <boost/test/unit_test.hpp>
 #include "check_stack.hpp"
 
+std::ostream& operator<<(std::ostream &out, Array const& array)
+{
+	return out << "{ .begin = " << array.begin << ", .end = " << array.end << " }";
+}
+
+bool operator==(Array const& lhs, Array const& rhs)
+{
+	return lhs.begin == rhs.begin && lhs.end == rhs.end;
+}
+
 void checkStack(std::stack<Token> const& actual, std::stack<Token> const& expected)
 {
 	auto expected_ = expected;

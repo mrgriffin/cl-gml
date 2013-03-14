@@ -6,6 +6,9 @@
 #include <vector>
 #include "gml.hpp"
 
+// TODO: Have C++-specific tokens that contain their heap data, rather than this.
+Token heap[1024];
+
 std::stack<Token> exec(Token const* begin, Token const *end, std::size_t maxStackSize, std::size_t maxHeapSize)
 {
 	// Get available platforms.
@@ -27,7 +30,7 @@ std::stack<Token> exec(Token const* begin, Token const *end, std::size_t maxStac
 	cl::CommandQueue queue = cl::CommandQueue(context, devices[0]);
 
 	// Read source file.
-	std::ifstream sourceFile("kernel/gml.cl");
+	std::ifstream sourceFile("kernel/gml.cl.pp");
 	std::string sourceCode(
 		std::istreambuf_iterator<char>(sourceFile),
 		(std::istreambuf_iterator<char>()));
@@ -80,9 +83,14 @@ std::stack<Token> exec(Token const* begin, Token const *end, std::size_t maxStac
 	queue.enqueueTask(kernel);
 
 	// Read buffer stackOut into a local list.
+	// TODO: Is there a bug when reading 0 elements?
 	queue.enqueueReadBuffer(bufferOutN, CL_TRUE, 0, sizeof stackSize, &stackSize);
 	auto stack = std::vector<Token>(stackSize);
 	queue.enqueueReadBuffer(bufferOut, CL_TRUE, 0, stackSize * sizeof(Token), stack.data());
+
+	// Read buffer heap into a local list.
+	queue.enqueueReadBuffer(bufferHeap, CL_TRUE, 0, std::min(sizeof heap, maxHeapSize * sizeof(Token)), heap);
+
 	return std::stack<Token>(std::deque<Token>(stack.begin(), stack.end()));
 }
 

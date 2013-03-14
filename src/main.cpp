@@ -25,6 +25,15 @@ std::ostream& operator<<(std::ostream& out, Token const& token)
 	case TYPE_OP:
 		out << ops[token.data.OP];
 		break;
+	case TYPE_MARKER:
+		out << "[";
+		break;
+	case TYPE_ARRAY:
+		out << "[ ";
+		for (auto i = token.data.ARRAY.begin; i != token.data.ARRAY.end; ++i)
+			out << heap[i] << " ";
+		out << "]";
+		break;
 	default:
 		out << "[unknown]";
 		break;

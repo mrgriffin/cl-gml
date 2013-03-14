@@ -38,6 +38,48 @@ OPERATOR(ARRAY, "]", (
 	))
 ))
 
+OPERATOR(IF, "if", (
+	(((INT, int condition), (BLOCK, struct Array ifTrue)), (
+		if (condition) {
+			for (__global const struct Token *in_p = ifTrue.begin; in_p < ifTrue.end; ++in_p) {
+				switch (in_p->type) {
+				case TYPE_OP:
+					switch (in_p->data.OP) {
+					case OP_ADD: exec_ADD(stack, heap); break;
+					case OP_SUB: exec_SUB(stack, heap); break;
+					case OP_ARRAY: exec_ARRAY(stack, heap); break;
+					}
+					break;
+				default:
+					push(stack, *in_p);
+					break;
+				}
+			}
+		}
+	))
+))
+
+OPERATOR(IFELSE, "ifelse", (
+	(((INT, int condition), (BLOCK, struct Array ifTrue), (BLOCK, struct Array ifFalse)), (
+		struct Array *block = condition ? &ifTrue : &ifFalse;
+		for (__global const struct Token *in_p = block->begin; in_p < block->end; ++in_p) {
+			switch (in_p->type) {
+			case TYPE_OP:
+				switch (in_p->data.OP) {
+				case OP_ADD: exec_ADD(stack, heap); break;
+				case OP_SUB: exec_SUB(stack, heap); break;
+				case OP_ARRAY: exec_ARRAY(stack, heap); break;
+				}
+				break;
+			default:
+				push(stack, *in_p);
+				break;
+			}
+		}
+
+	))
+))
+
 /* TODO: Fake recursion somehow. */
 /* WARNING: Nested blocks are not supported. */
 /* WARNING: Cannot execute the exec operator token. */

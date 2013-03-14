@@ -7,7 +7,7 @@
 #include "token.h"
 
 const char *ops[] = {
-	#define OPERATOR(name, funcs) #name,
+	#define OPERATOR(name, token, funcs) token,
 	#include "operators.def"
 };
 %}
@@ -15,6 +15,21 @@ const char *ops[] = {
 %option noyywrap
 
 %%
+
+\[ {
+	struct Token token = { .type = TYPE_MARKER, { .MARKER = MARKER_ARRAY } };
+	fwrite(&token, sizeof token, 1, stdout);
+}
+
+\{ {
+	struct Token token = { .type = TYPE_MARKER, { .MARKER = MARKER_BLOCK_BEGIN } };
+	fwrite(&token, sizeof token, 1, stdout);
+}
+
+\} {
+	struct Token token = { .type = TYPE_MARKER, { .MARKER = MARKER_BLOCK_END } };
+	fwrite(&token, sizeof token, 1, stdout);
+}
 
 [0-9]+\.[0-9]+ {
 	struct Token token = { .type = TYPE_FLOAT };
@@ -28,7 +43,7 @@ const char *ops[] = {
 	fwrite(&token, sizeof token, 1, stdout);
 }
 
-[a-zA-Z]+ {
+[^[:space:]]+ {
 	bool defined = false;
 
 	for (size_t i = 0; i < sizeof ops / sizeof ops[0]; ++i) {

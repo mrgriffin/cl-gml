@@ -2,7 +2,7 @@
 #error "must define OPERATOR before including operators"
 #endif
 
-OPERATOR(ADD, (
+OPERATOR(ADD, "add", (
 	(((INT, int a), (INT, int b)), (
 		push_INT(stack, a + b);
 	)), (((FLOAT, float a), (FLOAT, float b)), (
@@ -10,11 +10,69 @@ OPERATOR(ADD, (
 	))
 ))
 
-OPERATOR(SUB, (
+OPERATOR(SUB, "sub", (
 	(((INT, int a), (INT, int b)), (
 		push_INT(stack, a - b);
 	)), (((FLOAT, float a), (FLOAT, float b)), (
 		push_FLOAT(stack, a - b);
+	))
+))
+
+/* TODO: Introduce a parameterless operator form. */
+/* WARNING: This fails when called as [ X ]; unless it has already been called as [ X Y ... ]. */
+OPERATOR(ARRAY, "]", (
+	(((TOKEN, struct Token token)), (
+		ptrdiff_t n = -1;
+		/* TODO: Make this not crash if there is not a matching [ operator. */
+		while ((stack->top - n)->type != TYPE_MARKER && (stack->top -n)->data.MARKER != MARKER_ARRAY)
+			n++;
+
+		pop_n(stack, n);
+
+		__global struct Token *tokens = malloc(heap, n);
+		if (tokens) {
+			for (size_t i = 0; i < n; ++i)
+				tokens[i] = *(stack->top + i + 1);
+			push_ARRAY(stack, (struct Array) { tokens, tokens + n });
+		}
+	))
+))
+
+/* TODO: Fake recursion somehow. */
+/* WARNING: Nested blocks are not supported. */
+/* WARNING: Cannot execute the exec operator token. */
+OPERATOR(EXEC, "exec", (
+	(((TOKEN, struct Token token)), (
+		/* HACK: token is not in the __global address space. */
+		switch (token.type) {
+		case TYPE_OP:
+			switch (token.data.OP) {
+			case OP_ADD: exec_ADD(stack, heap); break;
+			case OP_SUB: exec_SUB(stack, heap); break;
+			case OP_ARRAY: exec_ARRAY(stack, heap); break;
+			}
+			break;
+		case TYPE_BLOCK:
+			for (__global const struct Token *in_p = token.data.BLOCK.begin; in_p < token.data.BLOCK.end; ++in_p) {
+				switch (in_p->type) {
+				case TYPE_OP:
+					switch (in_p->data.OP) {
+					case OP_ADD: exec_ADD(stack, heap); break;
+					case OP_SUB: exec_SUB(stack, heap); break;
+					case OP_ARRAY: exec_ARRAY(stack, heap); break;
+					}
+					break;
+				default:
+					push(stack, *in_p);
+					break;
+				}
+			}
+			break;
+		default:
+			/* TODO: We could define unpop to optimize this. */
+			push(stack, token);
+			break;
+		}
 	))
 ))
 

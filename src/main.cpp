@@ -11,7 +11,7 @@ std::ostream& operator<<(std::ostream& out, Token const& token)
 	};
 
 	static const char *ops[] = {
-		#define OPERATOR(name, funcs) #name,
+		#define OPERATOR(name, token, funcs) token,
 		#include "operators.def"
 	};
 
@@ -24,6 +24,23 @@ std::ostream& operator<<(std::ostream& out, Token const& token)
 		break;
 	case TYPE_OP:
 		out << ops[token.data.OP];
+		break;
+	case TYPE_MARKER:
+		switch (token.data.MARKER) {
+		case MARKER_ARRAY:       out << "["; break;
+		case MARKER_BLOCK_BEGIN: out << "{"; break;
+		case MARKER_BLOCK_END:   out << "}"; break;
+		default:                 out << "[unknown]"; break;
+		}
+		break;
+	case TYPE_ARRAY:
+		out << "[ ";
+		for (auto i = token.data.ARRAY.begin; i != token.data.ARRAY.end; ++i)
+			out << heap[i] << " ";
+		out << "]";
+		break;
+	case TYPE_BLOCK:
+		out << "{ ... }";
 		break;
 	default:
 		out << "[unknown]";

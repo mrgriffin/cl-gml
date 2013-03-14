@@ -6,7 +6,10 @@
 #include <vector>
 #include "gml.hpp"
 
-std::stack<Token> exec(Token const* begin, Token const *end, std::size_t maxStackSize)
+// TODO: Have C++-specific tokens that contain their heap data, rather than this.
+Token heap[1024];
+
+std::stack<Token> exec(Token const* begin, Token const *end, std::size_t maxStackSize, std::size_t maxHeapSize)
 {
 	// Get available platforms.
 	std::vector<cl::Platform> platforms;
@@ -27,7 +30,7 @@ std::stack<Token> exec(Token const* begin, Token const *end, std::size_t maxStac
 	cl::CommandQueue queue = cl::CommandQueue(context, devices[0]);
 
 	// Read source file.
-	std::ifstream sourceFile("kernel/gml.cl");
+	std::ifstream sourceFile("kernel/gml.cl.pp");
 	std::string sourceCode(
 		std::istreambuf_iterator<char>(sourceFile),
 		(std::istreambuf_iterator<char>()));
@@ -60,6 +63,7 @@ std::stack<Token> exec(Token const* begin, Token const *end, std::size_t maxStac
 	cl::Buffer bufferIn = cl::Buffer(context, CL_MEM_READ_ONLY, (end - begin) * sizeof(Token));
 	cl::Buffer bufferOut = cl::Buffer(context, CL_MEM_WRITE_ONLY, maxStackSize * sizeof(Token));
 	cl::Buffer bufferOutN = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(cl_uint));
+	cl::Buffer bufferHeap = cl::Buffer(context, CL_MEM_WRITE_ONLY, maxHeapSize * sizeof(Token));
 
 	// Copy stackIn to the memory buffers.
 	queue.enqueueWriteBuffer(bufferIn, CL_TRUE, 0, (end - begin) * sizeof(Token), begin);
@@ -69,21 +73,28 @@ std::stack<Token> exec(Token const* begin, Token const *end, std::size_t maxStac
 
 	// Set arguments to kernel.
 	kernel.setArg(0, bufferIn);
-	kernel.setArg(1, (unsigned)(end - begin));
+	kernel.setArg(1, unsigned(end - begin));
 	kernel.setArg(2, bufferOut);
 	kernel.setArg(3, bufferOutN);
+	kernel.setArg(4, bufferHeap);
+	kernel.setArg(5, unsigned(maxHeapSize));
 
 	// Run the kernel.
 	queue.enqueueTask(kernel);
 
 	// Read buffer stackOut into a local list.
+	// TODO: Is there a bug when reading 0 elements?
 	queue.enqueueReadBuffer(bufferOutN, CL_TRUE, 0, sizeof stackSize, &stackSize);
 	auto stack = std::vector<Token>(stackSize);
 	queue.enqueueReadBuffer(bufferOut, CL_TRUE, 0, stackSize * sizeof(Token), stack.data());
+
+	// Read buffer heap into a local list.
+	queue.enqueueReadBuffer(bufferHeap, CL_TRUE, 0, std::min(sizeof heap, maxHeapSize * sizeof(Token)), heap);
+
 	return std::stack<Token>(std::deque<Token>(stack.begin(), stack.end()));
 }
 
-std::stack<Token> exec(std::initializer_list<Token> tokens, std::size_t maxStackSize)
+std::stack<Token> exec(std::initializer_list<Token> tokens, std::size_t maxStackSize, std::size_t maxHeapSize)
 {
-	return exec(tokens.begin(), tokens.end(), maxStackSize);
+	return exec(tokens.begin(), tokens.end(), maxStackSize, maxHeapSize);
 }

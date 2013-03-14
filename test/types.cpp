@@ -30,3 +30,10 @@ BOOST_AUTO_TEST_CASE(ARRAY_ONE)
 	BOOST_CHECK_EQUAL(heap[0].type, TYPE_INT);
 	BOOST_CHECK_EQUAL(heap[0].data.INT, 1);
 }
+
+// TODO: This test should check the number of tokens in the block or something?
+BOOST_AUTO_TEST_CASE(BLOCK)
+{
+	checkStack(exec({ { TYPE_MARKER, { .MARKER = MARKER_BLOCK_BEGIN } }, { TYPE_INT, { .INT = 1 } }, { TYPE_MARKER, { .MARKER = MARKER_BLOCK_END } }, { TYPE_OP, { .OP = OP_EXEC } } }),
+	                { { TYPE_INT, { .INT = 1 } } });
+}

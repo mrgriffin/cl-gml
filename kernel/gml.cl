@@ -192,6 +192,20 @@ void exec_OP(__global const struct Token *token, struct Stack *stack, struct Hea
 }
 
 /*!
+ * \brief Executes a block of operators.
+ */
+// TODO: Allow nested blocks (OpenCL does not allow recursion).
+void exec_BLOCK(__global const struct Token *token, struct Stack *stack, struct Heap *heap)
+{
+	for (__global const struct Token *in_p = token->data.BLOCK.begin; in_p < token->data.BLOCK.end; ++in_p) {
+		switch (in_p->type) {
+			case TYPE_OP:    exec_OP(in_p, stack, heap); break;
+			default:         push(stack, *in_p); break;
+		}
+	}
+}
+
+/*!
  * \brief Executes the token at \p token.
  * \param token a pointer to the token to execute.
  * \param out a pointer to the stack.
@@ -201,8 +215,9 @@ void exec_OP(__global const struct Token *token, struct Stack *stack, struct Hea
 void exec(__global const struct Token *token, struct Stack *stack, struct Heap *heap)
 {
 	switch (token->type) {
-		case TYPE_OP: exec_OP(token, stack, heap); break;
-		default:      push(stack, *token); break;
+		case TYPE_OP:    exec_OP(token, stack, heap); break;
+		case TYPE_BLOCK: exec_BLOCK(token, stack, heap); break;
+		default:         push(stack, *token); break;
 	}
 }
 
@@ -220,22 +235,38 @@ __kernel void exec_range(__global const struct Token *in, unsigned in_n, __globa
 	struct Heap heap_;
 	make_heap(&heap_, heap, heap + heap_n);
 
-	for (__global const struct Token *in_p = in; in_p < in + in_n; in_p++)
-		exec(in_p, &stack, &heap_);
+	for (__global const struct Token *in_p = in; in_p < in + in_n; in_p++) {
+		// WARNING: This can not handle nested blocks.
+		if (in_p->type == TYPE_MARKER && in_p->data.MARKER == MARKER_BLOCK_BEGIN) {
+			__global const struct Token *in_e = in_p + 1;
+			while (in_e < in + in_n) {
+				// TODO: Move this up into the while condition.
+				if (in_e->type == TYPE_MARKER && in_e->data.MARKER == MARKER_BLOCK_END)
+					break;
+				in_e++;
+			}
+			// WARNING: We must not alter the contents of blocks as they alias the input tokens.
+			push(&stack, (struct Token) { TYPE_BLOCK, { .BLOCK = (struct Array) { (__global struct Token *)(in_p + 1), (__global struct Token *)(in_e) } } });
+			in_p = in_e;
+		} else {
+			exec(in_p, &stack, &heap_);
+		}
+	}
 
 	// HACK: Change array pointers into indicies into the heap.
 	// TODO: Instead pass back heap_.begin so that C++ can do the transformations.
+	// HINT: Block pointers are not into the heap and therefore unchanged (and useless).
 	for (__global struct Token *token = stack.bottom; token != stack.top; ++token) {
 		if (token->type == TYPE_ARRAY) {
-			token->data.ARRAY.begin -= heap;
-			token->data.ARRAY.end -= heap;
+			token->data.ARRAY.begin = (__global struct Token *)(token->data.ARRAY.begin - heap);
+			token->data.ARRAY.end = (__global struct Token *)(token->data.ARRAY.end - heap);
 		}
 	}
 
 	for (__global struct Token *token = heap_.begin; token != heap_.end; ++token) {
 		if (token->type == TYPE_ARRAY) {
-			token->data.ARRAY.begin -= heap;
-			token->data.ARRAY.end -= heap;
+			token->data.ARRAY.begin = (__global struct Token *)(token->data.ARRAY.begin - heap);
+			token->data.ARRAY.end = (__global struct Token *)(token->data.ARRAY.end - heap);
 		}
 	}
 

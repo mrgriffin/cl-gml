@@ -17,8 +17,17 @@ const char *ops[] = {
 %%
 
 \[ {
-	struct Token token = { .type = TYPE_MARKER };
-	token.data.MARKER = MARKER_ARRAY;
+	struct Token token = { .type = TYPE_MARKER, { .MARKER = MARKER_ARRAY } };
+	fwrite(&token, sizeof token, 1, stdout);
+}
+
+\{ {
+	struct Token token = { .type = TYPE_MARKER, { .MARKER = MARKER_BLOCK_BEGIN } };
+	fwrite(&token, sizeof token, 1, stdout);
+}
+
+\} {
+	struct Token token = { .type = TYPE_MARKER, { .MARKER = MARKER_BLOCK_END } };
 	fwrite(&token, sizeof token, 1, stdout);
 }
 

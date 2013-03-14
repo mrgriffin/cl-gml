@@ -7,5 +7,6 @@ TYPE(FLOAT, float)
 TYPE(OP, enum Operator)
 TYPE(MARKER, enum Marker)
 TYPE(ARRAY, struct Array)
+TYPE(BLOCK, struct Array)
 
 #undef TYPE

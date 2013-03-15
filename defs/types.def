@@ -7,6 +7,7 @@ TYPE(FLOAT, float)
 TYPE(OP, enum Operator)
 TYPE(MARKER, enum Marker)
 TYPE(ARRAY, struct Array)
+/* TODO: Give this its own representation. */
 TYPE(BLOCK, struct Array)
 TYPE(VECTOR3, struct Vector3)
 

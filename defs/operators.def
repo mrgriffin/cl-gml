@@ -28,7 +28,7 @@ OPERATOR(ARRAY, "]", (
 	(((TOKEN, struct Token token)), (
 		ptrdiff_t n = -1;
 		/* TODO: Make this not crash if there is not a matching [ operator. */
-		while ((stack->top - n)->type != TYPE_MARKER && (stack->top -n)->data.MARKER != MARKER_ARRAY)
+		while ((stack->top - n)->type != TYPE_MARKER && (stack->top - n)->data.MARKER != MARKER_ARRAY)
 			n++;
 
 		pop_n(stack, n);

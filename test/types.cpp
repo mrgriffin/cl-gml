@@ -16,6 +16,12 @@ BOOST_AUTO_TEST_CASE(FLOAT)
 	                { { TYPE_FLOAT, { .FLOAT = 1 } } });
 }
 
+BOOST_AUTO_TEST_CASE(VECTOR3)
+{
+	checkStack(exec({ Token { TYPE_VECTOR3, { .VECTOR3 = { 1, 2, 3 } } } }),
+	                { Token { TYPE_VECTOR3, { .VECTOR3 = { 1, 2, 3 } } } });
+}
+
 BOOST_AUTO_TEST_CASE(ARRAY_EMPTY)
 {
 	checkStack(exec({ { TYPE_MARKER, { .MARKER = MARKER_ARRAY } }, { TYPE_OP, { .OP = OP_ARRAY } } }),

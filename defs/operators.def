@@ -7,6 +7,8 @@ OPERATOR(ADD, "add", (
 		push_INT(stack, a + b);
 	)), (((FLOAT, float a), (FLOAT, float b)), (
 		push_FLOAT(stack, a + b);
+	)), (((VECTOR3, struct Vector3 a), (VECTOR3, struct Vector3 b)), (
+		push_VECTOR3(stack, (struct Vector3) { a.x + b.x, a.y + b.y, a.z + b.z });
 	))
 ))
 
@@ -15,6 +17,8 @@ OPERATOR(SUB, "sub", (
 		push_INT(stack, a - b);
 	)), (((FLOAT, float a), (FLOAT, float b)), (
 		push_FLOAT(stack, a - b);
+	)), (((VECTOR3, struct Vector3 a), (VECTOR3, struct Vector3 b)), (
+		push_VECTOR3(stack, (struct Vector3) { a.x - b.x, a.y - b.y, a.z - b.z });
 	))
 ))
 

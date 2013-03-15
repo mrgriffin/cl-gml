@@ -1,7 +1,7 @@
 #include <boost/test/unit_test.hpp>
 #include "check_stack.hpp"
 
-std::ostream& operator<<(std::ostream &out, Array const& array)
+std::ostream& operator<<(std::ostream& out, Array const& array)
 {
 	return out << "{ .begin = " << array.begin << ", .end = " << array.end << " }";
 }
@@ -9,6 +9,16 @@ std::ostream& operator<<(std::ostream &out, Array const& array)
 bool operator==(Array const& lhs, Array const& rhs)
 {
 	return lhs.begin == rhs.begin && lhs.end == rhs.end;
+}
+
+std::ostream& operator<<(std::ostream& out, Vector3 const& vector)
+{
+	return out << "(" << vector.x << ", " << vector.y << ", " << vector.z << ")";
+}
+
+bool operator==(Vector3 const& lhs, Vector3 const& rhs)
+{
+	return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
 }
 
 void checkStack(std::stack<Token> const& actual, std::stack<Token> const& expected)

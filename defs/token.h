@@ -25,6 +25,18 @@ struct Vector3
 	float x, y, z;
 };
 
+struct Edge
+{
+	HeapPointer mesh;
+	short vertex, element;
+};
+
+struct Mesh
+{
+	HeapPointer vertices, elements;
+	short vertex_n, element_n;
+};
+
 enum Type
 {
 	#define TYPE(name, repr) TYPE_ ## name,

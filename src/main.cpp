@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <iomanip>
 #include <iostream>
 #include <vector>
 #include "gml.hpp"
@@ -44,6 +45,43 @@ std::ostream& operator<<(std::ostream& out, Token const& token)
 		break;
 	case TYPE_BLOCK:
 		out << "{ ... }";
+		break;
+	case TYPE_EDGE:
+		out << "E"
+		    << std::setfill('0') << std::setw(4) << token.data.EDGE.mesh
+		    << std::setfill('0') << std::setw(4) << token.data.EDGE.vertex
+		    << std::setfill('0') << std::setw(4) << token.data.EDGE.element;
+
+		{
+			Mesh* mesh = &heap[token.data.EDGE.mesh].data.MESH;
+			Token* vertices = &heap[mesh->vertices];
+			Token* elements = &heap[mesh->elements];
+			for (auto i = 0; i < mesh->vertex_n; ++i) {
+				Vector3 v = vertices[i].data.VECTOR3;
+				std::cerr << "v " << v.x << " " << v.y << " " << v.z << std::endl;
+			}
+			for (auto i = 0; i < mesh->element_n; ++i) {
+				Vector3 v0 = elements[i].data.VECTOR3;
+				//std::cerr << "f " << int(e.x + 1) << " " << int(e.y + 1) << std::endl;
+				for (auto j = i + 1; j < mesh->element_n; ++j) {
+					Vector3 v1 = elements[j].data.VECTOR3;
+					if (v0.y == v1.x) {
+						for (auto k = i + 1; k < mesh->element_n; ++k) {
+							Vector3 v2 = elements[k].data.VECTOR3;
+							if (v2.y == v0.x && v2.x == v1.y)
+								std::cerr << "f " << int(v0.x + 1) << " " << int(v0.y + 1) << " " << int(v1.y + 1) << std::endl;
+						}
+					} else if (v0.x == v1.y) {
+						for (auto k = i + 1; k < mesh->element_n; ++k) {
+							Vector3 v2 = elements[k].data.VECTOR3;
+							if (v2.x == v0.x && v2.y == v1.y)
+								std::cerr << "f " << int(v0.x + 1) << " " << int(v0.y + 1) << " " << int(v1.y + 1) << std::endl;
+						}
+					}
+				}
+			}
+		}
+
 		break;
 	default:
 		out << "[unknown]";

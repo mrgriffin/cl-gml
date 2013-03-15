@@ -42,6 +42,88 @@ OPERATOR(ARRAY, "]", (
 	))
 ))
 
+/* WARNING: Operators below this line are not implemented by if, ifelse or exec. */
+
+OPERATOR(DUP, "dup", (
+	(((TOKEN, struct Token token)), (
+		push(stack, token);
+		push(stack, token);
+	))
+))
+
+OPERATOR(EXCH, "exch", (
+	(((TOKEN, struct Token token1), (TOKEN, struct Token token2)), (
+		push(stack, token2);
+		push(stack, token1);
+	))
+))
+
+OPERATOR(POP, "pop", (
+	(((TOKEN, struct Token token)), (
+	))
+))
+
+OPERATOR(MAKEVEFS, "makeVEFS", (
+	(((VECTOR3, struct Vector3 p0), (VECTOR3, struct Vector3 p1)), (
+		__global struct Token *vertices = malloc(heap, 2);
+		if (vertices) {
+			__global struct Token *elements = malloc(heap, 1);
+			if (elements) {
+				vertices[0] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = p0 } };
+				vertices[1] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = p1 } };
+				/* TODO: Use a list of ints for element indicies. */
+				elements[0] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = { 0, 1 } } };
+				__global struct Token *mesh = malloc(heap, 1);
+				if (mesh) {
+					*mesh = (struct Token) { TYPE_MESH, { .MESH = vertices, elements, 2, 1 } };
+					push_EDGE(stack, (struct Edge) { mesh, 0, 0 });
+				} else {
+					free(heap, elements);
+					free(heap, vertices);
+				}
+			} else {
+				free(heap, vertices);
+			}
+		}
+	))
+))
+
+OPERATOR(MAKEEVONE, "makeEVone", (
+	(((EDGE, struct Edge e), (VECTOR3, struct Vector3 p)), (
+		__global struct Mesh *mesh = &e.mesh->data.MESH;
+		mesh->vertices = realloc(heap, mesh->vertices, mesh->vertex_n + 1);
+		if (mesh->vertices) {
+			mesh->elements = realloc(heap, mesh->elements, mesh->element_n + 1);
+			if (mesh->elements) {
+				mesh->vertices[mesh->vertex_n] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = p } };
+				/* TODO: What should the vertex be? */
+				mesh->elements[mesh->element_n] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = { e.vertex + 1, mesh->vertex_n } } };
+				/* TODO: What should the vertex be? */
+				push_EDGE(stack, (struct Edge) { mesh, mesh->vertex_n - 1, mesh->element_n });
+				mesh->vertex_n += 1;
+				mesh->element_n += 1;
+			} else {
+				free(heap, mesh->vertices);
+			}
+		}
+	))
+))
+
+OPERATOR(MAKEEF, "makeEF", (
+	(((EDGE, struct Edge e1), (EDGE, struct Edge e2)), (
+		/* TODO: Assert that e1 and e2 are on the same mesh. */
+		__global struct Mesh *mesh = &e1.mesh->data.MESH;
+		mesh->elements = realloc(heap, mesh->elements, mesh->element_n + 1);
+		if (mesh->elements) {
+			/* TODO: What should the vertex be? */
+			mesh->elements[mesh->element_n] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = { e2.vertex + 1, e1.vertex } } };
+			/* TODO: What should the vertex be? */
+			push_EDGE(stack, (struct Edge) { mesh, e2.vertex - 1, mesh->element_n });
+			mesh->element_n += 1;
+		}
+	))
+))
+
 OPERATOR(IF, "if", (
 	(((INT, int condition), (BLOCK, struct Array ifTrue)), (
 		if (condition) {

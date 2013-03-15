@@ -43,6 +43,12 @@ const char *ops[] = {
 	fwrite(&token, sizeof token, 1, stdout);
 }
 
+\([0-9]+(\.[0-9]+)?,[0-9]+(\.[0-9]+)?,[0-9]+(\.[0-9]+)?\) {
+	struct Token token = { .type = TYPE_VECTOR3 };
+	sscanf(yytext, "(%f,%f,%f)", &token.data.VECTOR3.x, &token.data.VECTOR3.y, &token.data.VECTOR3.z);
+	fwrite(&token, sizeof token, 1, stdout);
+}
+
 [^[:space:]]+ {
 	bool defined = false;
 

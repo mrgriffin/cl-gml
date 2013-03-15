@@ -20,6 +20,11 @@ struct Array
 	HeapPointer end;
 };
 
+struct Vector3
+{
+	float x, y, z;
+};
+
 enum Type
 {
 	#define TYPE(name, repr) TYPE_ ## name,

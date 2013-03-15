@@ -22,6 +22,9 @@ std::ostream& operator<<(std::ostream& out, Token const& token)
 	case TYPE_FLOAT:
 		out << token.data.FLOAT;
 		break;
+	case TYPE_VECTOR3:
+		out << "(" << token.data.VECTOR3.x << ", " << token.data.VECTOR3.y << ", " << token.data.VECTOR3.z << ")";
+		break;
 	case TYPE_OP:
 		out << ops[token.data.OP];
 		break;
@@ -61,7 +64,9 @@ int main()
 
 	try {
 		auto stack = exec(tokens.data(), tokens.data() + tokens.size());
-		
+
+		std::cout << "STACK:" << std::endl;
+
 		while (!stack.empty()) {
 			auto e = stack.top();
 			std::cout << e << std::endl;

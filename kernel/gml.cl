@@ -57,6 +57,7 @@ __global struct Token *realloc(struct Heap *heap, __global struct Token *ptr, si
 	for (size_t i = 0; i < MAX_BINS; ++i) {
 		if (!heap->bins[i].free && heap->bins[i].begin == ptr) {
 			if (n >= (heap->bins[i].end - heap->bins[i].begin)) {
+				// WARNING: realloc should not free if it fails to allocate.
 				heap->bins[i].free = true;
 				return 0;
 			} else {
@@ -172,6 +173,7 @@ void exec_ ## name (struct Stack *stack, struct Heap *heap) \
 { \
 	__global struct Token *_top; \
 	FOR_EACH(DECL_FN, UNBOX funcs) \
+	/* TODO: Throw an error if no overloads matched. */ \
 	/* HACK: Work around nVidia bug where last generated overload will be skipped. */ return; \
 }
 #include "operators.def"
@@ -260,6 +262,11 @@ __kernel void exec_range(__global const struct Token *in, unsigned in_n, __globa
 		if (token->type == TYPE_ARRAY) {
 			token->data.ARRAY.begin = (__global struct Token *)(token->data.ARRAY.begin - heap);
 			token->data.ARRAY.end = (__global struct Token *)(token->data.ARRAY.end - heap);
+		} else if (token->type == TYPE_EDGE) {
+			token->data.EDGE.mesh = (__global struct Token *)(token->data.EDGE.mesh - heap);
+		} else if (token->type == TYPE_MESH) {
+			token->data.MESH.vertices = (__global struct Token *)(token->data.MESH.vertices - heap);
+			token->data.MESH.elements = (__global struct Token *)(token->data.MESH.elements - heap);
 		}
 	}
 
@@ -267,6 +274,11 @@ __kernel void exec_range(__global const struct Token *in, unsigned in_n, __globa
 		if (token->type == TYPE_ARRAY) {
 			token->data.ARRAY.begin = (__global struct Token *)(token->data.ARRAY.begin - heap);
 			token->data.ARRAY.end = (__global struct Token *)(token->data.ARRAY.end - heap);
+		} else if (token->type == TYPE_EDGE) {
+			token->data.EDGE.mesh = (__global struct Token *)(token->data.EDGE.mesh - heap);
+		} else if (token->type == TYPE_MESH) {
+			token->data.MESH.vertices = (__global struct Token *)(token->data.MESH.vertices - heap);
+			token->data.MESH.elements = (__global struct Token *)(token->data.MESH.elements - heap);
 		}
 	}
 

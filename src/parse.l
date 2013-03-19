@@ -16,6 +16,8 @@ const char *ops[] = {
 
 %%
 
+\%.*\n {}
+
 \[ {
 	struct Token token = { .type = TYPE_MARKER, { .MARKER = MARKER_ARRAY } };
 	fwrite(&token, sizeof token, 1, stdout);
@@ -31,19 +33,19 @@ const char *ops[] = {
 	fwrite(&token, sizeof token, 1, stdout);
 }
 
-[0-9]+\.[0-9]+ {
+-?[0-9]+\.[0-9]+ {
 	struct Token token = { .type = TYPE_FLOAT };
 	token.data.FLOAT = atof(yytext);
 	fwrite(&token, sizeof token, 1, stdout);
 }
 
-[0-9]+ {
+-?[0-9]+ {
 	struct Token token = { .type = TYPE_INT };
 	token.data.INT = atoi(yytext);
 	fwrite(&token, sizeof token, 1, stdout);
 }
 
-\([0-9]+(\.[0-9]+)?,[0-9]+(\.[0-9]+)?,[0-9]+(\.[0-9]+)?\) {
+\(-?[0-9]+(\.[0-9]+)?,-?[0-9]+(\.[0-9]+)?,-?[0-9]+(\.[0-9]+)?\) {
 	struct Token token = { .type = TYPE_VECTOR3 };
 	sscanf(yytext, "(%f,%f,%f)", &token.data.VECTOR3.x, &token.data.VECTOR3.y, &token.data.VECTOR3.z);
 	fwrite(&token, sizeof token, 1, stdout);

@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <iomanip>
 #include <iostream>
 #include <vector>
 #include "gml.hpp"
@@ -44,6 +45,29 @@ std::ostream& operator<<(std::ostream& out, Token const& token)
 		break;
 	case TYPE_BLOCK:
 		out << "{ ... }";
+		break;
+	case TYPE_EDGE:
+		out << "E"
+		    << std::setfill('0') << std::setw(4) << token.data.EDGE.mesh
+		    << std::setfill('0') << std::setw(4) << token.data.EDGE.vertices[0]
+		    << std::setfill('0') << std::setw(4) << token.data.EDGE.vertices[1];
+
+		{
+			Mesh* mesh = &heap[token.data.EDGE.mesh].data.MESH;
+			Token* vertices = &heap[mesh->vertices];
+			Token* elements = &heap[mesh->elements];
+
+			for (auto i = 0; i < mesh->vertex_n; ++i) {
+				Vector3 v = vertices[i].data.VECTOR3;
+				std::cerr << "v " << v.x << " " << v.y << " " << v.z << std::endl;
+			}
+
+			for (auto i = 0; i < mesh->element_n; ++i) {
+				Vector3 e = elements[i].data.VECTOR3;
+				std::cerr << "f " << int(e.x + 1) << " " << int(e.y + 1) << " " << int(e.z + 1) << std::endl;
+			}
+		}
+
 		break;
 	default:
 		out << "[unknown]";

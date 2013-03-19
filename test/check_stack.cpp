@@ -1,4 +1,6 @@
 #include <boost/test/unit_test.hpp>
+#include <cassert>
+#include <iomanip>
 #include "check_stack.hpp"
 
 std::ostream& operator<<(std::ostream& out, Array const& array)
@@ -19,6 +21,30 @@ std::ostream& operator<<(std::ostream& out, Vector3 const& vector)
 bool operator==(Vector3 const& lhs, Vector3 const& rhs)
 {
 	return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
+}
+
+std::ostream& operator<<(std::ostream& out, Edge const& edge)
+{
+	// HINT: 4 is not enough
+	return out << "E"
+		   << std::setfill('0') << std::setw(4) << edge.mesh
+		   << std::setfill('0') << std::setw(4) << edge.vertices[0]
+		   << std::setfill('0') << std::setw(4) << edge.vertices[1];
+}
+
+bool operator==(Edge const& lhs, Edge const& rhs)
+{
+	return lhs.mesh == rhs.mesh && lhs.vertices[0] == rhs.vertices[0] && lhs.vertices[1] == rhs.vertices[1];
+}
+
+std::ostream& operator<<(std::ostream& out, Mesh const& mesh)
+{
+	assert(false);
+}
+
+bool operator==(Mesh const& lhs, Mesh const& rhs)
+{
+	assert(false);
 }
 
 void checkStack(std::stack<Token> const& actual, std::stack<Token> const& expected)

@@ -127,6 +127,31 @@ void push_ ## name (struct Stack *stack, repr name) \
 }
 #include "types.def"
 
+bool is_TOKEN(__global struct Token *token)
+{
+	return true;
+}
+
+#define TYPE(name, repr) \
+bool is_ ## name (__global struct Token *token) \
+{ \
+	return token->type == TYPE_ ## name; \
+}
+#include "types.def"
+
+#define STACK_FRAMES 16
+
+#define GOSUB(begin, end) do { \
+	if (sp < STACK_FRAMES) \
+		stack_frames[++sp] = (struct StackFrame) { begin, end }; \
+	else \
+		; /* TODO: Throw a StackOverflowError. */ \
+} while (0)
+
+#define RETURN do { \
+	--sp; \
+} while (0)
+
 #if 0
 
 OPERATOR(ADD, 0, ((((INT, int a), (INT, int b)), (push_INT(stack, a - b);)))) =>
@@ -147,81 +172,76 @@ void exec_ADD(struct Stack *stack)
 
 #endif
 
-bool is_TOKEN(__global struct Token *token)
+void exec(__global const struct Token *begin, __global const struct Token *end, struct Stack *stack, struct Heap *heap)
 {
-	return true;
-}
+	struct StackFrame {
+		__global const struct Token *pc;
+		__global const struct Token *end;
+	} stack_frames[STACK_FRAMES] = { { begin, end }, 0 };
 
-#define TYPE(name, repr) \
-bool is_ ## name (__global struct Token *token) \
-{ \
-	return token->type == TYPE_ ## name; \
-}
-#include "types.def"
+	int sp = 0;
 
-#define TYPE_EQ(x) CONCAT(is_, ARG1 x)(--_top) &&
-#define DECL_VAR(x) INVOKE_(ARG2, UNBOX x) = CONCAT(pop_, INVOKE_(ARG1, UNBOX x)) (stack);
-#define DECL_FN(x) \
-_top = stack->top; \
-if (INVOKE(FOR_EACH_, TYPE_EQ, INVOKE_U(REVERSE, INVOKE_(ARG1, UNBOX x))) 1) {\
-	INVOKE(FOR_EACH_, DECL_VAR, INVOKE_U(REVERSE, INVOKE_(ARG1, UNBOX x))) \
-	INVOKE_U(UNBOX, INVOKE_(ARG2, UNBOX x)) \
-	return; \
-}
-#define OPERATOR(name, token, funcs) \
-void exec_ ## name (struct Stack *stack, struct Heap *heap) \
-{ \
-	__global struct Token *_top; \
-	FOR_EACH(DECL_FN, UNBOX funcs) \
-	/* TODO: Throw an error if no overloads matched. */ \
-	/* HACK: Work around nVidia bug where last generated overload will be skipped. */ return; \
-}
-#include "operators.def"
-#undef TYPE_EQ
-#undef DECL_VAR
-#undef DECL_FN
+	while (sp >= 0) {
+		__global const struct Token *ci = stack_frames[sp].pc++;
 
-/*!
- * \brief Executes an operator token.
- */
-void exec_OP(__global const struct Token *token, struct Stack *stack, struct Heap *heap)
-{
-	switch (token->data.OP) {
-	#define OPERATOR(name, token, funcs) case OP_ ## name: exec_ ## name (stack, heap); break;
-	#include "operators.def"
-	// TODO: assert(false) if we reach here.
-	}
-}
-
-/*!
- * \brief Executes a block of operators.
- */
-// TODO: Allow nested blocks (OpenCL does not allow recursion).
-void exec_BLOCK(__global const struct Token *token, struct Stack *stack, struct Heap *heap)
-{
-	for (__global const struct Token *in_p = token->data.BLOCK.begin; in_p < token->data.BLOCK.end; ++in_p) {
-		switch (in_p->type) {
-			case TYPE_OP:    exec_OP(in_p, stack, heap); break;
-			default:         push(stack, *in_p); break;
+		switch (ci->type) {
+			case TYPE_OP:
+				switch (ci->data.OP) {
+					#define TYPE_EQ(x) CONCAT(is_, ARG1 x)(--_top) &&
+					#define DECL_VAR(x) INVOKE_(ARG2, UNBOX x) = CONCAT(pop_, INVOKE_(ARG1, UNBOX x)) (stack);
+					#define DECL_FN(x) \
+					_top = stack->top; \
+					if (INVOKE(FOR_EACH_, TYPE_EQ, INVOKE_U(REVERSE, INVOKE_(ARG1, UNBOX x))) 1) {\
+						INVOKE(FOR_EACH_, DECL_VAR, INVOKE_U(REVERSE, INVOKE_(ARG1, UNBOX x))) \
+						INVOKE_U(UNBOX, INVOKE_(ARG2, UNBOX x)) \
+						break; \
+					}
+					#define OPERATOR(name, token, funcs) \
+					case OP_ ## name: \
+					{ \
+						__global struct Token *_top; \
+						FOR_EACH(DECL_FN, UNBOX funcs) \
+						/* TODO: Throw an error if no overloads matched. */ \
+						break; \
+					}
+					#include "operators.def"
+					#undef TYPE_EQ
+					#undef DECL_VAR
+					#undef DECL_FN
+				}
+				break;
+			/* TODO: This should be done as part of the parse process. */
+			case TYPE_MARKER:
+				if (ci->data.MARKER == MARKER_BLOCK_BEGIN) {
+					__global const struct Token *ni = ci + 1;
+					int markers = 1;
+					while (ni < stack_frames[sp].end) {
+						// TODO: Move this up into the while condition.
+						if (ni->type == TYPE_MARKER && ni->data.MARKER == MARKER_BLOCK_BEGIN)
+							++markers;
+						if (ni->type == TYPE_MARKER && ni->data.MARKER == MARKER_BLOCK_END && --markers == 0)
+							break;
+						++ni;
+					}
+					// WARNING: We must not alter the contents of blocks as they alias the input tokens.
+					push(stack, (struct Token) { TYPE_BLOCK, { .BLOCK = (struct Array) { (__global struct Token *)(ci + 1), (__global struct Token *)(ni) } } });
+					stack_frames[sp].pc = ni + 1;
+				} else {
+					push(stack, *ci);
+				}
+				break;
+			default:
+				push(stack, *ci);
+				break;
 		}
+
+		while (sp >= 0 && stack_frames[sp].pc == stack_frames[sp].end)
+			RETURN;
 	}
 }
 
-/*!
- * \brief Executes the token at \p token.
- * \param token a pointer to the token to execute.
- * \param out a pointer to the stack.
- * \param out_n the maximum size of the stack.
- * \return a pointer to the token after the token at \p token.
- */
-void exec(__global const struct Token *token, struct Stack *stack, struct Heap *heap)
-{
-	switch (token->type) {
-		case TYPE_OP:    exec_OP(token, stack, heap); break;
-		case TYPE_BLOCK: exec_BLOCK(token, stack, heap); break;
-		default:         push(stack, *token); break;
-	}
-}
+#undef RETURN
+#undef GOSUB
 
 /*!
  * \brief Executes the tokens in the range \p in .. \p in + \p in_n.
@@ -237,23 +257,7 @@ __kernel void exec_range(__global const struct Token *in, unsigned in_n, __globa
 	struct Heap heap_;
 	make_heap(&heap_, heap, heap + heap_n);
 
-	for (__global const struct Token *in_p = in; in_p < in + in_n; in_p++) {
-		// WARNING: This can not handle nested blocks.
-		if (in_p->type == TYPE_MARKER && in_p->data.MARKER == MARKER_BLOCK_BEGIN) {
-			__global const struct Token *in_e = in_p + 1;
-			while (in_e < in + in_n) {
-				// TODO: Move this up into the while condition.
-				if (in_e->type == TYPE_MARKER && in_e->data.MARKER == MARKER_BLOCK_END)
-					break;
-				in_e++;
-			}
-			// WARNING: We must not alter the contents of blocks as they alias the input tokens.
-			push(&stack, (struct Token) { TYPE_BLOCK, { .BLOCK = (struct Array) { (__global struct Token *)(in_p + 1), (__global struct Token *)(in_e) } } });
-			in_p = in_e;
-		} else {
-			exec(in_p, &stack, &heap_);
-		}
-	}
+	exec(in, in + in_n, &stack, &heap_);
 
 	// HACK: Change array pointers into indicies into the heap.
 	// TODO: Instead pass back heap_.begin so that C++ can do the transformations.

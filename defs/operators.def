@@ -63,6 +63,12 @@ OPERATOR(POP, "pop", (
 	))
 ))
 
+OPERATOR(INDEX, "index", (
+	(((INT, int index)), (
+		push(stack, stack->top[-(index + 1)]);
+	))
+))
+
 OPERATOR(MAKEVEFS, "makeVEFS", (
 	(((VECTOR3, struct Vector3 p0), (VECTOR3, struct Vector3 p1)), (
 		__global struct Token *vertices = malloc(heap, 2);
@@ -87,7 +93,7 @@ OPERATOR(MAKEEVONE, "makeEVone", (
 		if (mesh->vertices) {
 			mesh->vertices[mesh->vertex_n] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = p } };
 			/* TODO: What should the vertex be? */
-			push_EDGE(stack, (struct Edge) { mesh, { e.vertices[1], mesh->vertex_n } });
+			push_EDGE(stack, (struct Edge) { e.mesh, { e.vertices[1], mesh->vertex_n } });
 			mesh->vertex_n += 1;
 		}
 	))
@@ -103,10 +109,16 @@ OPERATOR(MAKEEF, "makeEF", (
 			/* TODO: What should the vertex be? */
 			if (e1.vertices[1] == e2.vertices[0]) {
 				mesh->elements[mesh->element_n] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = { e1.vertices[0], e1.vertices[1], e2.vertices[1] } } };
-				push_EDGE(stack, (struct Edge) { mesh, e2.vertices[1], e1.vertices[0] });
-			} else {
+				push_EDGE(stack, (struct Edge) { e1.mesh, { e2.vertices[1], e1.vertices[0] } });
+			} else if (e1.vertices[0] == e2.vertices[1]) {
 				mesh->elements[mesh->element_n] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = { e2.vertices[1], e2.vertices[0], e1.vertices[0] } } };
-				push_EDGE(stack, (struct Edge) { mesh, e1.vertices[0], e2.vertices[1] });
+				push_EDGE(stack, (struct Edge) { e1.mesh, { e1.vertices[0], e2.vertices[1] } });
+			} else if (e1.vertices[0] == e2.vertices[0]) {
+				mesh->elements[mesh->element_n] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = { e1.vertices[0], e1.vertices[1], e2.vertices[1] } } };
+				push_EDGE(stack, (struct Edge) { e1.mesh, { e1.vertices[1], e2.vertices[1] } });
+			} else if (e1.vertices[1] == e2.vertices[1]) {
+				mesh->elements[mesh->element_n] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = { e2.vertices[1], e2.vertices[0], e1.vertices[0] } } };
+				push_EDGE(stack, (struct Edge) { e1.mesh, { e1.vertices[0], e2.vertices[0] } });
 			}
 			mesh->element_n += 1;
 		}

@@ -127,42 +127,15 @@ OPERATOR(MAKEEF, "makeEF", (
 
 OPERATOR(IF, "if", (
 	(((INT, int condition), (BLOCK, struct Array ifTrue)), (
-		if (condition) {
-			for (__global const struct Token *in_p = ifTrue.begin; in_p < ifTrue.end; ++in_p) {
-				switch (in_p->type) {
-				case TYPE_OP:
-					switch (in_p->data.OP) {
-					case OP_ADD: exec_ADD(stack, heap); break;
-					case OP_SUB: exec_SUB(stack, heap); break;
-					case OP_ARRAY: exec_ARRAY(stack, heap); break;
-					}
-					break;
-				default:
-					push(stack, *in_p);
-					break;
-				}
-			}
-		}
+		if (condition)
+			GOSUB(ifTrue.begin, ifTrue.end);
 	))
 ))
 
 OPERATOR(IFELSE, "ifelse", (
 	(((INT, int condition), (BLOCK, struct Array ifTrue), (BLOCK, struct Array ifFalse)), (
 		struct Array *block = condition ? &ifTrue : &ifFalse;
-		for (__global const struct Token *in_p = block->begin; in_p < block->end; ++in_p) {
-			switch (in_p->type) {
-			case TYPE_OP:
-				switch (in_p->data.OP) {
-				case OP_ADD: exec_ADD(stack, heap); break;
-				case OP_SUB: exec_SUB(stack, heap); break;
-				case OP_ARRAY: exec_ARRAY(stack, heap); break;
-				}
-				break;
-			default:
-				push(stack, *in_p);
-				break;
-			}
-		}
+		GOSUB(block->begin, block->end);
 
 	))
 ))
@@ -175,27 +148,10 @@ OPERATOR(EXEC, "exec", (
 		/* HACK: token is not in the __global address space. */
 		switch (token.type) {
 		case TYPE_OP:
-			switch (token.data.OP) {
-			case OP_ADD: exec_ADD(stack, heap); break;
-			case OP_SUB: exec_SUB(stack, heap); break;
-			case OP_ARRAY: exec_ARRAY(stack, heap); break;
-			}
+			/* TODO: Execute the token. */
 			break;
 		case TYPE_BLOCK:
-			for (__global const struct Token *in_p = token.data.BLOCK.begin; in_p < token.data.BLOCK.end; ++in_p) {
-				switch (in_p->type) {
-				case TYPE_OP:
-					switch (in_p->data.OP) {
-					case OP_ADD: exec_ADD(stack, heap); break;
-					case OP_SUB: exec_SUB(stack, heap); break;
-					case OP_ARRAY: exec_ARRAY(stack, heap); break;
-					}
-					break;
-				default:
-					push(stack, *in_p);
-					break;
-				}
-			}
+			GOSUB(token.data.BLOCK.begin, token.data.BLOCK.end);
 			break;
 		default:
 			/* TODO: We could define unpop to optimize this. */

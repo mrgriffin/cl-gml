@@ -67,20 +67,12 @@ OPERATOR(MAKEVEFS, "makeVEFS", (
 	(((VECTOR3, struct Vector3 p0), (VECTOR3, struct Vector3 p1)), (
 		__global struct Token *vertices = malloc(heap, 2);
 		if (vertices) {
-			__global struct Token *elements = malloc(heap, 1);
-			if (elements) {
-				vertices[0] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = p0 } };
-				vertices[1] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = p1 } };
-				/* TODO: Use a list of ints for element indicies. */
-				elements[0] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = { 0, 1 } } };
-				__global struct Token *mesh = malloc(heap, 1);
-				if (mesh) {
-					*mesh = (struct Token) { TYPE_MESH, { .MESH = vertices, elements, 2, 1 } };
-					push_EDGE(stack, (struct Edge) { mesh, 0, 0 });
-				} else {
-					free(heap, elements);
-					free(heap, vertices);
-				}
+			vertices[0] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = p0 } };
+			vertices[1] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = p1 } };
+			__global struct Token *mesh = malloc(heap, 1);
+			if (mesh) {
+				*mesh = (struct Token) { TYPE_MESH, { .MESH = { vertices, 0, 2, 0 } } };
+				push_EDGE(stack, (struct Edge) { mesh, { 0, 1  } });
 			} else {
 				free(heap, vertices);
 			}
@@ -93,18 +85,10 @@ OPERATOR(MAKEEVONE, "makeEVone", (
 		__global struct Mesh *mesh = &e.mesh->data.MESH;
 		mesh->vertices = realloc(heap, mesh->vertices, mesh->vertex_n + 1);
 		if (mesh->vertices) {
-			mesh->elements = realloc(heap, mesh->elements, mesh->element_n + 1);
-			if (mesh->elements) {
-				mesh->vertices[mesh->vertex_n] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = p } };
-				/* TODO: What should the vertex be? */
-				mesh->elements[mesh->element_n] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = { e.vertex + 1, mesh->vertex_n } } };
-				/* TODO: What should the vertex be? */
-				push_EDGE(stack, (struct Edge) { mesh, mesh->vertex_n - 1, mesh->element_n });
-				mesh->vertex_n += 1;
-				mesh->element_n += 1;
-			} else {
-				free(heap, mesh->vertices);
-			}
+			mesh->vertices[mesh->vertex_n] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = p } };
+			/* TODO: What should the vertex be? */
+			push_EDGE(stack, (struct Edge) { mesh, { e.vertices[1], mesh->vertex_n } });
+			mesh->vertex_n += 1;
 		}
 	))
 ))
@@ -115,10 +99,15 @@ OPERATOR(MAKEEF, "makeEF", (
 		__global struct Mesh *mesh = &e1.mesh->data.MESH;
 		mesh->elements = realloc(heap, mesh->elements, mesh->element_n + 1);
 		if (mesh->elements) {
+			/* TODO: Create multiple triangular faces if { e1, e2 } does not define a triangle.
 			/* TODO: What should the vertex be? */
-			mesh->elements[mesh->element_n] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = { e2.vertex + 1, e1.vertex } } };
-			/* TODO: What should the vertex be? */
-			push_EDGE(stack, (struct Edge) { mesh, e2.vertex - 1, mesh->element_n });
+			if (e1.vertices[1] == e2.vertices[0]) {
+				mesh->elements[mesh->element_n] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = { e1.vertices[0], e1.vertices[1], e2.vertices[1] } } };
+				push_EDGE(stack, (struct Edge) { mesh, e2.vertices[1], e1.vertices[0] });
+			} else {
+				mesh->elements[mesh->element_n] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = { e2.vertices[1], e2.vertices[0], e1.vertices[0] } } };
+				push_EDGE(stack, (struct Edge) { mesh, e1.vertices[0], e2.vertices[1] });
+			}
 			mesh->element_n += 1;
 		}
 	))

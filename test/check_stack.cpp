@@ -28,13 +28,13 @@ std::ostream& operator<<(std::ostream& out, Edge const& edge)
 	// HINT: 4 is not enough
 	return out << "E"
 		   << std::setfill('0') << std::setw(4) << edge.mesh
-		   << std::setfill('0') << std::setw(4) << edge.vertex
-		   << std::setfill('0') << std::setw(4) << edge.element;
+		   << std::setfill('0') << std::setw(4) << edge.vertices[0]
+		   << std::setfill('0') << std::setw(4) << edge.vertices[1];
 }
 
 bool operator==(Edge const& lhs, Edge const& rhs)
 {
-	return lhs.mesh == rhs.mesh && lhs.vertex == rhs.vertex && lhs.element == rhs.element;
+	return lhs.mesh == rhs.mesh && lhs.vertices[0] == rhs.vertices[0] && lhs.vertices[1] == rhs.vertices[1];
 }
 
 std::ostream& operator<<(std::ostream& out, Mesh const& mesh)

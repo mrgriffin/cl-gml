@@ -28,7 +28,7 @@ struct Vector3
 struct Edge
 {
 	HeapPointer mesh;
-	short vertex, element;
+	short vertices[2];
 };
 
 struct Mesh

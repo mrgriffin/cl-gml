@@ -23,7 +23,6 @@ OPERATOR(SUB, "sub", (
 ))
 
 /* TODO: Introduce a parameterless operator form. */
-/* WARNING: This fails when called as [ X ]; unless it has already been called as [ X Y ... ]. */
 OPERATOR(ARRAY, "]", (
 	(((TOKEN, struct Token token)), (
 		ptrdiff_t n = -1;
@@ -35,14 +34,12 @@ OPERATOR(ARRAY, "]", (
 
 		__global struct Token *tokens = malloc(heap, n);
 		if (tokens) {
-			for (size_t i = 0; i < n; ++i)
+			for (size_t i = 0; i < n + 1; ++i)
 				tokens[i] = *(stack->top + i + 1);
 			push_ARRAY(stack, (struct Array) { tokens, tokens + n });
 		}
 	))
 ))
-
-/* WARNING: Operators below this line are not implemented by if, ifelse or exec. */
 
 OPERATOR(DUP, "dup", (
 	(((TOKEN, struct Token token)), (
@@ -140,12 +137,8 @@ OPERATOR(IFELSE, "ifelse", (
 	))
 ))
 
-/* TODO: Fake recursion somehow. */
-/* WARNING: Nested blocks are not supported. */
-/* WARNING: Cannot execute the exec operator token. */
 OPERATOR(EXEC, "exec", (
 	(((TOKEN, struct Token token)), (
-		/* HACK: token is not in the __global address space. */
 		switch (token.type) {
 		case TYPE_OP:
 			/* TODO: Execute the token. */

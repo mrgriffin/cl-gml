@@ -65,7 +65,7 @@ const char *ops[] = {
 	}
 
 	if (!defined)
-		printf("skipping undefined operator '%s'\n", yytext);
+		fprintf(stderr, "skipping undefined operator '%s'\n", yytext);
 }
 
 .|\n {}

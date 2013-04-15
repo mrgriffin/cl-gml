@@ -1,6 +1,34 @@
+/*!
+ * \file gml.cl
+ * \brief GML interpreter.
+ */
+
 #include "pp.h"
 #include "token.h"
 
+/*!
+ * \def TYPE(name, representation)
+ * \brief Defines the token type \p name to be a value of type \p representation.
+ */
+
+/*!
+ * \def OPERATOR(name, token, overloads)
+ * \brief Defines the operator \p name (recognized by the parser as \p token).
+ * \detail \p overloads is a parenthesis-enclosed comma-separated list of functions of the form:
+ * ~~~{.c}
+ *    (((TYPE_NAME_1, TYPE_REPR_1 name_1), ..., (TYPE_NAME_N, TYPE_REPR_N name_N)), (
+ *        // Operator code...
+ *    ))
+ * ~~~
+ * \warning limitations in \c pp.h limit the number of overloads and parameters to overloads to 8.
+ * \sa pp.h
+ */
+
+/*!
+ * \brief Token stack used by ::exec for evaluating operators.
+ * \sa pop
+ * \sa push
+ */
 struct Stack
 {
 	__global struct Token *bottom; //!< The bottom of this stack.
@@ -8,8 +36,12 @@ struct Stack
 	__global struct Token *max;    //!< The maximum top of this stack.
 };
 
-// TODO: Change the heap to a region of chars.
+// TODO: Change the heap to a region of chars to conform with ANSI C.
 
+/*!
+ * \brief Block of memory on a Heap that can be allocated by ::malloc.
+ * \memberof Heap
+ */
 struct HeapBin
 {
 	__global struct Token *begin; //!< The first address in this bin.
@@ -17,8 +49,16 @@ struct HeapBin
 	bool free;                    //!< Whether this bin is allocated.
 };
 
+/*!
+ * \brief The maximum number of simultaneous allocations.
+ * \relates Heap
+ */
 #define MAX_BINS 16
 
+/*!
+ * \brief Token heap used by ::exec for dynamic allocations.
+ * \sa make_heap
+ */
 struct Heap
 {
 	__global struct Token *begin;  //!< The first address in this heap.
@@ -26,6 +66,10 @@ struct Heap
 	struct HeapBin bins[MAX_BINS]; //!< The bins in this heap.
 };
 
+/*!
+ * \brief Initializes \p heap to allocate memory in the range \p begin .. \p end.
+ * \memberof Heap
+ */
 void make_heap(struct Heap *heap, __global struct Token *begin, __global struct Token *end)
 {
 	heap->begin = begin;
@@ -35,6 +79,16 @@ void make_heap(struct Heap *heap, __global struct Token *begin, __global struct 
 		heap->bins[i] = (struct HeapBin) { begin + binSize * i, begin + binSize * (i + 1), true };
 }
 
+/*!
+ * \brief Allocates a block of \p n `Token`s.
+ * \return A pointer to the first Token in the block; or \c 0 if the allocation failed.
+ * \warning does not merge bins so allocations bigger than `(heap->end - heap->begin) / MAX_BINS` will fail.
+ * \warning does not split bins so more than \c MAX_BINS simultaneous allocations will fail.
+ * \warning differs from ANSI C's \c malloc in that \p n is a count of `Token`s not `char`s.
+ * \memberof Heap
+ * \sa realloc
+ * \sa free
+ */
 __global struct Token *malloc(struct Heap *heap, size_t n)
 {
 	for (size_t i = 0; i < MAX_BINS; ++i) {
@@ -47,6 +101,17 @@ __global struct Token *malloc(struct Heap *heap, size_t n)
 	return 0;
 }
 
+/*!
+ * \brief Reallocates the block at \p ptr to hold \p n `Token`s.
+ * \return A pointer to the first Token in the block; or \c 0 if the allocation failed.
+ * \warning does not merge bins so allocations bigger than `(heap->end - heap->begin) / MAX_BINS` will fail.
+ * \warning does not split bins so more than \c MAX_BINS simultaneous allocations will fail.
+ * \warning differs from ANSI C's \c malloc in that \p n is a count of `Token`s not `char`s.
+ * \warning differs from ANSI C's \c realloc in that \p ptr will be freed if the allocation fails.
+ * \memberof Heap
+ * \sa malloc
+ * \sa free
+ */
 __global struct Token *realloc(struct Heap *heap, __global struct Token *ptr, size_t n)
 {
 	if (ptr == 0)
@@ -68,6 +133,12 @@ __global struct Token *realloc(struct Heap *heap, __global struct Token *ptr, si
 	return 0;
 }
 
+/*!
+ * \brief Frees the block at \p ptr.
+ * \memberof Heap
+ * \sa realloc
+ * \sa free
+ */
 void free(struct Heap *heap, __global struct Token *ptr)
 {
 	for (size_t i = 0; i < MAX_BINS; ++i)
@@ -75,45 +146,72 @@ void free(struct Heap *heap, __global struct Token *ptr)
 			heap->bins[i].free = true;
 }
 
-void push(struct Stack *stack, struct Token token)
-{
-	*stack->top++ = token;
-}
-
+/*!
+ * \brief Pops a token from \p stack.
+ * \return The popped token.
+ * \warning will cause a stack underflow if \p stack is empty (`stack->top == stack->bottom`).
+ * \memberof Stack
+ */
 struct Token pop(struct Stack *stack)
 {
 	return *--stack->top;
 }
 
+/*!
+ * \brief Pops a token of type \c TOKEN from \p stack.
+ * \return The popped token.
+ * \warning will cause a stack underflow if \p stack is empty (`stack->top == stack->bottom`).
+ * \sa pop
+ * \sa pop_TYPE
+ */
 struct Token pop_TOKEN(struct Stack *stack)
 {
 	return pop(stack);
 }
 
-// TODO: Assert that stack has enough space.
-void pop_n(struct Stack *stack, size_t n)
+/*!
+ * \brief Pushes \p token onto \p stack.
+ * \warning will cause a stack overflow if \p stack is full (`stack->top == stack->max`).
+ * \memberof Stack
+ */
+void push(struct Stack *stack, struct Token token)
 {
-	stack->top -= n;
+	*stack->top++ = token;
 }
 
-#if 0
+/*!
+ * \fn TYPE pop_TYPE(struct Stack *stack)
+ * \brief Pops a token of type \c TYPE from \p stack.
+ * \detail Expands from `TYPE(NAME, REPR)` to
+ * ~~~{.c}
+ *    REPR pop_NAME(struct Stack *stack)
+ *    {
+ *        return pop(stack)->data.NAME;
+ *    }
+ * ~~~
+ * \return The internal value of the token (`token->data.TYPE`).
+ * \warning will cause a stack underflow if \p stack is empty (`stack->top == stack->bottom`).
+ * \relates TYPE
+ * \sa pop
+ * \sa pop_TOKEN
+ * \sa push_TYPE
+ */
 
-TYPE(INT, 0, int) =>
-
-// TODO: Assert that top >= bottom.
-// TODO: Assert that top->type == TYPE_ ## name.
-int pop_INT(struct Stack *stack)
-{
-	return (--stack->top)->data.INT;
-}
-
-// TODO: Assert that top < max.
-void push_INT(struct Stack *stack, int INT)
-{
-	*stack->top++ = (struct Token) { TYPE_INT, { .INT = INT } };
-}
-
-#endif
+/*!
+ * \fn push_TYPE(struct Stack *stack, TYPE value)
+ * \brief Pushes a value as a token of type \c TYPE to \p stack.
+ * \detail Expands from `TYPE(NAME, REPR)` to
+ * ~~~{.c}
+ *    void push_NAME(struct Stack *stack, REPR value)
+ *    {
+ *        push(stack, (struct Token) { TYPE_NAME, { .NAME = value } });
+ *    }
+ * ~~~
+ * \warning will cause a stack overflow if \p stack is full (`stack->top == stack->max`).
+ * \relates TYPE
+ * \sa push
+ * \sa pop_TYPE
+ */
 
 #define TYPE(name, repr) \
 repr pop_ ## name (struct Stack *stack) \
@@ -121,16 +219,35 @@ repr pop_ ## name (struct Stack *stack) \
 	return (--stack->top)->data.name; \
 } \
 \
-void push_ ## name (struct Stack *stack, repr name) \
+void push_ ## name (struct Stack *stack, repr value) \
 { \
-	*stack->top++ = (struct Token) { .type = TYPE_ ## name, { .name = name } }; \
+	*stack->top++ = (struct Token) { .type = TYPE_ ## name, { .name = value } }; \
 }
 #include "types.def"
 
+/*!
+ * \brief Checks if \p token is of type \c TOKEN.
+ * \return \c true if \p token is of type \c TOKEN; \c false otherwise.
+ * \sa is_TYPE
+ */
 bool is_TOKEN(__global struct Token *token)
 {
 	return true;
 }
+
+/*!
+ * \fn bool is_TYPE(__global struct Token *token)
+ * \brief Checks if \p token is of type \c TYPE.
+ * \detail Expands from `TYPE(NAME, REPR)` to
+ * ~~~{.c}
+ *    bool is_NAME(__global struct Token *token)
+ *    {
+ *        return token->type == TYPE_NAME;
+ *    }
+ * ~~~
+ * \relates TYPE
+ * \sa is_TOKEN
+ */
 
 #define TYPE(name, repr) \
 bool is_ ## name (__global struct Token *token) \
@@ -139,8 +256,19 @@ bool is_ ## name (__global struct Token *token) \
 }
 #include "types.def"
 
+/*!
+ * \brief Maximum number of stack frames in ::exec.
+ * \relates exec
+ */
 #define STACK_FRAMES 16
 
+/*!
+ * \brief Begins a new subroutine that executes the tokens in the range \p begin .. \p end.
+ * \detail The tokens will be executed until end is reached or an operator calls \c RETURN.
+ * \warning will overflow the stack if \c STACK_FRAMES stack frames are currently active.
+ * \relates OPERATOR
+ * \sa RETURN
+ */
 #define GOSUB(begin, end) do { \
 	if (sp < STACK_FRAMES) \
 		stack_frames[++sp] = (struct StackFrame) { begin, end }; \
@@ -148,30 +276,25 @@ bool is_ ## name (__global struct Token *token) \
 		; /* TODO: Throw a StackOverflowError. */ \
 } while (0)
 
+/*!
+ * \brief Ends the execution of a subroutine.
+ * \relates OPERATOR
+ * \sa GOSUB
+ */
 #define RETURN do { \
 	--sp; \
 } while (0)
 
-#if 0
-
-OPERATOR(ADD, 0, ((((INT, int a), (INT, int b)), (push_INT(stack, a - b);)))) =>
-
-void exec_ADD(struct Stack *stack)
-{
-	__global struct Token *_top;
-	_top = stack->top;
-	// TODO: Assert that _top will never go below stack->bottom.
-	if ((--_top)->type == TYPE_INT && (--_top)->type == TYPE_INT && 1) {
-		int b = pop_INT(stack);
-		int a = pop_INT(stack);
-		push_INT(stack, a + b);
-		return;
-	}
-	// TODO: Assert(false) if we reach here.
-}
-
-#endif
-
+/*!
+ * \brief Executes the tokens in the range \p begin .. \p end.
+ * \param begin the first token to execute.
+ * \param end one past the last token to execute.
+ * \param stack the stack to use for operators.
+ * \param heap the heap to use for allocations.7
+ * \warning will crash if the tokens recurse \c STACK_FRAMES times.
+ * \sa OPERATOR
+ * \sa STACK_FRAMES
+ */
 void exec(__global const struct Token *begin, __global const struct Token *end, struct Stack *stack, struct Heap *heap)
 {
 	struct StackFrame {
@@ -187,10 +310,26 @@ void exec(__global const struct Token *begin, __global const struct Token *end, 
 		switch (ci->type) {
 			case TYPE_OP:
 				switch (ci->data.OP) {
+					/*
+					 * OPERATOR(ADD, "add", ((((INT, int a), (INT, int b)), (push_INT(stack, a - b);))))
+					 *
+					 * void exec_ADD(struct Stack *stack)
+					 * {
+					 * 	__global struct Token *_top;
+					 * 	_top = stack->top;
+					 * 	if (is_INT(--_top) && is_INT(--_top) && 1) {
+					 * 		int b = pop_INT(stack);
+					 * 		int a = pop_INT(stack);
+					 * 		push_INT(stack, a + b);
+					 * 		return;
+					 * 	}
+					 * }
+					 */
 					#define TYPE_EQ(x) CONCAT(is_, ARG1 x)(--_top) &&
 					#define DECL_VAR(x) INVOKE_(ARG2, UNBOX x) = CONCAT(pop_, INVOKE_(ARG1, UNBOX x)) (stack);
 					#define DECL_FN(x) \
 					_top = stack->top; \
+					/* TODO: Skip this overload if the stack contains too few elements to match. */ \
 					if (INVOKE(FOR_EACH_, TYPE_EQ, INVOKE_U(REVERSE, INVOKE_(ARG1, UNBOX x))) 1) {\
 						INVOKE(FOR_EACH_, DECL_VAR, INVOKE_U(REVERSE, INVOKE_(ARG1, UNBOX x))) \
 						INVOKE_U(UNBOX, INVOKE_(ARG2, UNBOX x)) \
@@ -210,7 +349,7 @@ void exec(__global const struct Token *begin, __global const struct Token *end, 
 					#undef DECL_FN
 				}
 				break;
-			/* TODO: This should be done as part of the parse process. */
+			// TODO: This should be done as part of the parse process.
 			case TYPE_MARKER:
 				if (ci->data.MARKER == MARKER_BLOCK_BEGIN) {
 					__global const struct Token *ni = ci + 1;

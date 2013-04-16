@@ -1,84 +1,101 @@
-#define __CL_ENABLE_EXCEPTIONS
-#include <CL/cl.hpp>
-#include <utility>
+#include <cstdio>
+#include <iomanip>
 #include <iostream>
-#include <fstream>
-#include <string>
 #include <vector>
-#include "token.h"
+#include "gml.hpp"
+
+std::ostream& operator<<(std::ostream& out, Token const& token)
+{
+	static const char *types[] = {
+		#define TYPE(name, repr) #name,
+		#include "types.def"
+	};
+
+	static const char *ops[] = {
+		#define OPERATOR(name, token, funcs) token,
+		#include "operators.def"
+	};
+
+	switch (token.type) {
+	case TYPE_INT:
+		out << token.data.INT;
+		break;
+	case TYPE_FLOAT:
+		out << token.data.FLOAT;
+		break;
+	case TYPE_VECTOR3:
+		out << "(" << token.data.VECTOR3.x << ", " << token.data.VECTOR3.y << ", " << token.data.VECTOR3.z << ")";
+		break;
+	case TYPE_OP:
+		out << ops[token.data.OP];
+		break;
+	case TYPE_MARKER:
+		switch (token.data.MARKER) {
+		case MARKER_ARRAY:       out << "["; break;
+		case MARKER_BLOCK_BEGIN: out << "{"; break;
+		case MARKER_BLOCK_END:   out << "}"; break;
+		default:                 out << "[unknown]"; break;
+		}
+		break;
+	case TYPE_ARRAY:
+		out << "[ ";
+		for (auto i = token.data.ARRAY.begin; i != token.data.ARRAY.end; ++i)
+			out << heap[i] << " ";
+		out << "]";
+		break;
+	case TYPE_BLOCK:
+		out << "{ ... }";
+		break;
+	case TYPE_EDGE:
+		out << "E"
+		    << std::setfill('0') << std::setw(4) << token.data.EDGE.mesh
+		    << std::setfill('0') << std::setw(4) << token.data.EDGE.vertices[0]
+		    << std::setfill('0') << std::setw(4) << token.data.EDGE.vertices[1];
+
+		{
+			Mesh* mesh = &heap[token.data.EDGE.mesh].data.MESH;
+			Token* vertices = &heap[mesh->vertices];
+			Token* elements = &heap[mesh->elements];
+
+			for (auto i = 0; i < mesh->vertex_n; ++i) {
+				Vector3 v = vertices[i].data.VECTOR3;
+				std::cerr << "v " << v.x << " " << v.y << " " << v.z << std::endl;
+			}
+
+			for (auto i = 0; i < mesh->element_n; ++i) {
+				Vector3 e = elements[i].data.VECTOR3;
+				std::cerr << "f " << int(e.x + 1) << " " << int(e.y + 1) << " " << int(e.z + 1) << std::endl;
+			}
+		}
+
+		break;
+	default:
+		out << "[unknown]";
+		break;
+	}
+
+	out << " : " << types[token.type];
+
+	return out;
+}
 
 int main()
 {
-	Token in[] = {
-		{ TYPE_INT, { .value = 1 } },
-		{ TYPE_INT, { .value = 2 } },
-		{ TYPE_OP,  { .op = OP_ADD } },
-		{ TYPE_INT, { .value = 4 } },
-		{ TYPE_INT, { .value = 3 } },
-		{ TYPE_OP,  { .op = OP_ADD } },
-		{ TYPE_OP,  { .op = OP_ADD } },
-		{ TYPE_INT, { .value = 5 } },
-		{ TYPE_OP,  { .op = OP_SUB } },
-	};
+	std::vector<Token> tokens;
+	Token token;
+	while (std::fread(&token, sizeof token, 1, stdin) == 1)
+		tokens.push_back(token);
 
 	try {
-		// Get available platforms
-		std::vector<cl::Platform> platforms;
-		cl::Platform::get(&platforms);
+		auto stack = exec(tokens.data(), tokens.data() + tokens.size());
 
-		// Select the default platform and create a context using this platform and the GPU
-		cl_context_properties cps[3] = {
-			CL_CONTEXT_PLATFORM,
-			(cl_context_properties)(platforms[0])(),
-			0
-		};
-		cl::Context context(CL_DEVICE_TYPE_GPU, cps);
+		std::cout << "STACK:" << std::endl;
 
-		// Get a list of devices on this platform
-		std::vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
-
-		// Create a command queue and use the first device
-		cl::CommandQueue queue = cl::CommandQueue(context, devices[0]);
-
-		// Read source file
-		std::ifstream sourceFile("kernel/ps.cl");
-		std::string sourceCode(
-			std::istreambuf_iterator<char>(sourceFile),
-			(std::istreambuf_iterator<char>()));
-		cl::Program::Sources source(1, std::make_pair(sourceCode.c_str(), sourceCode.length()+1));
-
-		// Make program of the source code in the context
-		cl::Program program = cl::Program(context, source);
-
-		// Build program for these specific devices
-		program.build(devices, "-Idefs");
-
-		// Make kernel
-		cl::Kernel kernel(program, "exec_range");
-
-		// Create memory buffers
-		// TODO: How do we decide the size of the output stack?
-		cl::Buffer bufferIn = cl::Buffer(context, CL_MEM_READ_ONLY, sizeof in);
-		cl::Buffer bufferOut = cl::Buffer(context, CL_MEM_WRITE_ONLY, sizeof in);
-
-		// Copy stackIn to the memory buffers
-		queue.enqueueWriteBuffer(bufferIn, CL_TRUE, 0, sizeof in, in);
-
-		// Set arguments to kernel
-		kernel.setArg(0, bufferIn);
-		kernel.setArg(1, (unsigned int)(sizeof in / sizeof in[0]));
-		kernel.setArg(2, bufferOut);
-		kernel.setArg(3, (unsigned int)(sizeof in / sizeof in[0]));
-
-		// Run the kernel
-		queue.enqueueTask(kernel);
-
-		// Read buffer stackOut into a local list
-		Token out[sizeof in / sizeof in[0]];
-		queue.enqueueReadBuffer(bufferOut, CL_TRUE, 0, sizeof out, out);
-
-		for (std::size_t i = 0; i < sizeof out / sizeof out[0]; ++i)
-			std::cout << "[" << out[i].type << "] " << out[i].data.value << std::endl;
+		while (!stack.empty()) {
+			auto e = stack.top();
+			std::cout << e << std::endl;
+			stack.pop();
+		}
 	} catch(cl::Error error) {
 		std::cout << error.what() << "(" << error.err() << ")" << std::endl;
 	}

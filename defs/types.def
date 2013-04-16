@@ -2,7 +2,16 @@
 #error "must define TYPE before including types"
 #endif
 
-TYPE(INT, 0)
-TYPE(OP, 1)
+TYPE(INT, int)
+TYPE(FLOAT, float)
+TYPE(OP, enum Operator)
+TYPE(MARKER, enum Marker)
+TYPE(ARRAY, struct Array)
+/* TODO: Give this its own representation. */
+TYPE(BLOCK, struct Array)
+TYPE(VECTOR3, struct Vector3)
+TYPE(EDGE, struct Edge)
+/* TODO: Drop this once the heap allocates bytes. */
+TYPE(MESH, struct Mesh)
 
 #undef TYPE

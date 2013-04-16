@@ -2,16 +2,156 @@
 #error "must define OPERATOR before including operators"
 #endif
 
-OPERATOR(ADD, 0, ({
-	int b = pop_int(stack);
-	int a = pop_int(stack);
-	push_int(stack, a + b);
-}))
+OPERATOR(ADD, "add", (
+	(((INT, int a), (INT, int b)), (
+		push_INT(stack, a + b);
+	)), (((FLOAT, float a), (FLOAT, float b)), (
+		push_FLOAT(stack, a + b);
+	)), (((VECTOR3, struct Vector3 a), (VECTOR3, struct Vector3 b)), (
+		push_VECTOR3(stack, (struct Vector3) { a.x + b.x, a.y + b.y, a.z + b.z });
+	))
+))
 
-OPERATOR(SUB, 1, ({
-	int b = pop_int(stack);
-	int a = pop_int(stack);
-	push_int(stack, a - b);
-}))
+OPERATOR(SUB, "sub", (
+	(((INT, int a), (INT, int b)), (
+		push_INT(stack, a - b);
+	)), (((FLOAT, float a), (FLOAT, float b)), (
+		push_FLOAT(stack, a - b);
+	)), (((VECTOR3, struct Vector3 a), (VECTOR3, struct Vector3 b)), (
+		push_VECTOR3(stack, (struct Vector3) { a.x - b.x, a.y - b.y, a.z - b.z });
+	))
+))
+
+/* TODO: Introduce a parameterless operator form. */
+OPERATOR(ARRAY, "]", (
+	(((TOKEN, struct Token token)), (
+		ptrdiff_t n = -1;
+		/* TODO: Make this not crash if there is not a matching [ operator. */
+		while ((stack->top - n)->type != TYPE_MARKER && (stack->top - n)->data.MARKER != MARKER_ARRAY)
+			n++;
+
+		pop_n(stack, n);
+
+		__global struct Token *tokens = malloc(heap, n);
+		if (tokens) {
+			for (size_t i = 0; i < n + 1; ++i)
+				tokens[i] = *(stack->top + i + 1);
+			push_ARRAY(stack, (struct Array) { tokens, tokens + n });
+		}
+	))
+))
+
+OPERATOR(DUP, "dup", (
+	(((TOKEN, struct Token token)), (
+		push(stack, token);
+		push(stack, token);
+	))
+))
+
+OPERATOR(EXCH, "exch", (
+	(((TOKEN, struct Token token1), (TOKEN, struct Token token2)), (
+		push(stack, token2);
+		push(stack, token1);
+	))
+))
+
+OPERATOR(POP, "pop", (
+	(((TOKEN, struct Token token)), (
+	))
+))
+
+OPERATOR(INDEX, "index", (
+	(((INT, int index)), (
+		push(stack, stack->top[-(index + 1)]);
+	))
+))
+
+OPERATOR(MAKEVEFS, "makeVEFS", (
+	(((VECTOR3, struct Vector3 p0), (VECTOR3, struct Vector3 p1)), (
+		__global struct Token *vertices = malloc(heap, 2);
+		if (vertices) {
+			vertices[0] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = p0 } };
+			vertices[1] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = p1 } };
+			__global struct Token *mesh = malloc(heap, 1);
+			if (mesh) {
+				*mesh = (struct Token) { TYPE_MESH, { .MESH = { vertices, 0, 2, 0 } } };
+				push_EDGE(stack, (struct Edge) { mesh, { 0, 1  } });
+			} else {
+				free(heap, vertices);
+			}
+		}
+	))
+))
+
+OPERATOR(MAKEEVONE, "makeEVone", (
+	(((EDGE, struct Edge e), (VECTOR3, struct Vector3 p)), (
+		__global struct Mesh *mesh = &e.mesh->data.MESH;
+		mesh->vertices = realloc(heap, mesh->vertices, mesh->vertex_n + 1);
+		if (mesh->vertices) {
+			mesh->vertices[mesh->vertex_n] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = p } };
+			/* TODO: What should the vertex be? */
+			push_EDGE(stack, (struct Edge) { e.mesh, { e.vertices[1], mesh->vertex_n } });
+			mesh->vertex_n += 1;
+		}
+	))
+))
+
+OPERATOR(MAKEEF, "makeEF", (
+	(((EDGE, struct Edge e1), (EDGE, struct Edge e2)), (
+		/* TODO: Assert that e1 and e2 are on the same mesh. */
+		__global struct Mesh *mesh = &e1.mesh->data.MESH;
+		mesh->elements = realloc(heap, mesh->elements, mesh->element_n + 1);
+		if (mesh->elements) {
+			/* TODO: Create multiple triangular faces if { e1, e2 } does not define a triangle.
+			/* TODO: What should the vertex be? */
+			if (e1.vertices[1] == e2.vertices[0]) {
+				mesh->elements[mesh->element_n] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = { e1.vertices[0], e1.vertices[1], e2.vertices[1] } } };
+				push_EDGE(stack, (struct Edge) { e1.mesh, { e2.vertices[1], e1.vertices[0] } });
+			} else if (e1.vertices[0] == e2.vertices[1]) {
+				mesh->elements[mesh->element_n] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = { e2.vertices[1], e2.vertices[0], e1.vertices[0] } } };
+				push_EDGE(stack, (struct Edge) { e1.mesh, { e1.vertices[0], e2.vertices[1] } });
+			} else if (e1.vertices[0] == e2.vertices[0]) {
+				mesh->elements[mesh->element_n] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = { e1.vertices[0], e1.vertices[1], e2.vertices[1] } } };
+				push_EDGE(stack, (struct Edge) { e1.mesh, { e1.vertices[1], e2.vertices[1] } });
+			} else if (e1.vertices[1] == e2.vertices[1]) {
+				mesh->elements[mesh->element_n] = (struct Token) { TYPE_VECTOR3, { .VECTOR3 = { e2.vertices[1], e2.vertices[0], e1.vertices[0] } } };
+				push_EDGE(stack, (struct Edge) { e1.mesh, { e1.vertices[0], e2.vertices[0] } });
+			}
+			mesh->element_n += 1;
+		}
+	))
+))
+
+OPERATOR(IF, "if", (
+	(((INT, int condition), (BLOCK, struct Array ifTrue)), (
+		if (condition)
+			GOSUB(ifTrue.begin, ifTrue.end);
+	))
+))
+
+OPERATOR(IFELSE, "ifelse", (
+	(((INT, int condition), (BLOCK, struct Array ifTrue), (BLOCK, struct Array ifFalse)), (
+		struct Array *block = condition ? &ifTrue : &ifFalse;
+		GOSUB(block->begin, block->end);
+
+	))
+))
+
+OPERATOR(EXEC, "exec", (
+	(((TOKEN, struct Token token)), (
+		switch (token.type) {
+		case TYPE_OP:
+			/* TODO: Execute the token. */
+			break;
+		case TYPE_BLOCK:
+			GOSUB(token.data.BLOCK.begin, token.data.BLOCK.end);
+			break;
+		default:
+			/* TODO: We could define unpop to optimize this. */
+			push(stack, token);
+			break;
+		}
+	))
+))
 
 #undef OPERATOR

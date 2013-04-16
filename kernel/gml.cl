@@ -349,7 +349,6 @@ void exec(__global const struct Token *begin, __global const struct Token *end, 
 					#undef DECL_FN
 				}
 				break;
-			// TODO: This should be done as part of the parse process.
 			case TYPE_MARKER:
 				if (ci->data.MARKER == MARKER_BLOCK_BEGIN) {
 					__global const struct Token *ni = ci + 1;
@@ -399,7 +398,6 @@ __kernel void exec_range(__global const struct Token *in, unsigned in_n, __globa
 	exec(in, in + in_n, &stack, &heap_);
 
 	// HACK: Change array pointers into indicies into the heap.
-	// TODO: Instead pass back heap_.begin so that C++ can do the transformations.
 	// HINT: Block pointers are not into the heap and therefore unchanged (and useless).
 	for (__global struct Token *token = stack.bottom; token != stack.top; ++token) {
 		if (token->type == TYPE_ARRAY) {

@@ -387,6 +387,8 @@ void exec(__global const struct Token *begin, __global const struct Token *end, 
  * \param in_n the length of the tokens.
  * \param out a pointer to the stack.
  * \param out_n the maximum size of the stack.
+ * \param heap a pointer to the heap.
+ * \param heap_n the size of the heap.
  */
 __kernel void exec_range(__global const struct Token *in, unsigned in_n, __global struct Token *out, __global unsigned *out_n, __global struct Token *heap, unsigned heap_n)
 {
